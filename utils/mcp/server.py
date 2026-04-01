@@ -1,6 +1,5 @@
 import json
 import os
-import asyncio
 import logging
 from typing import Optional
 
@@ -8,7 +7,7 @@ from fastmcp import FastMCP
 
 from utils.mcp.auth_manager import TokenManager
 from utils.mcp.utils import update_openapi_specs_with_tags
-from utils.mcp.constants import SERVER_NAME
+from utils.mcp.constants import SERVER_NAME, DEFAULT_OPEN_API_SPEC_PATH
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -93,9 +92,22 @@ def create_mcp_server(args):
 
     openapi_spec_path = config.get('openapi_spec')
 
+    spec = None
     if openapi_spec_path:
+        logger.info("User provided OpenAPI spec found at %s. Loading it for MCP server.", openapi_spec_path)
         with open(openapi_spec_path) as fh:
             spec = json.load(fh)
+    else:
+        try:
+            p = DEFAULT_OPEN_API_SPEC_PATH
+            if os.path.exists(DEFAULT_OPEN_API_SPEC_PATH):
+                logger.info(f"Loading default OpenAPI spec from {DEFAULT_OPEN_API_SPEC_PATH}")
+                with open(DEFAULT_OPEN_API_SPEC_PATH) as fh:
+                    spec = json.load(fh)
+        except Exception as e:
+            logger.error(f"Failed to load default OpenAPI spec: {e}")
+
+    if spec:
         components = config.get('components', [])
         # If user provides a valid component list in the config.json, filtering the openapi spec for the specified
         # components, else filtering the openapi spec with the default component list . Only the endpoints with the
@@ -110,8 +122,8 @@ def create_mcp_server(args):
 
         mcp = FastMCP.from_openapi(name=SERVER_NAME, openapi_spec=updated_spec,
                                    client= async_con, auth=verifier, include_tags=include_tags)
-
     else:
+        logger.info("OpenAPI spec not available. Starting MCP server without it, some of the functionality might be unavailable.")
         mcp = FastMCP(name=SERVER_NAME, log_level="DEBUG", auth=verifier)
 
     _load_mcp_plugins()
