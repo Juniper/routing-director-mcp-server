@@ -210,3 +210,6 @@ __marimo__/
 RoutingDirectorMCP.egg-info
 PKG-INFO
 MANIFEST.in
+config.json
+.idea/
+.vscode/
