@@ -12,7 +12,7 @@ files_copy = {
     "mcp_setup/README.md": "README.md",
 }
 
-version = "v2.9.0"
+version = "v2.8.0"
 
 class CustomBuildCommand(sdist):
     def run(self):

@@ -99,7 +99,6 @@ def create_mcp_server(args):
             spec = json.load(fh)
     else:
         try:
-            p = DEFAULT_OPEN_API_SPEC_PATH
             if os.path.exists(DEFAULT_OPEN_API_SPEC_PATH):
                 logger.info(f"Loading default OpenAPI spec from {DEFAULT_OPEN_API_SPEC_PATH}")
                 with open(DEFAULT_OPEN_API_SPEC_PATH) as fh:

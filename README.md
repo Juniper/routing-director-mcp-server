@@ -266,7 +266,7 @@ Claude: https://code.claude.com/docs/en/mcp
 
 ## Version
 
-Current version: **v2.9.0**
+Current version: **v2.8.0**
 
 ---
 
