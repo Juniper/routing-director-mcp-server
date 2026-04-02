@@ -10,6 +10,7 @@ files_copy = {
     "requirements.txt": "requirements.txt",
     "setup.py": "setup.py",
     "README.md": "README.md",
+    "jrd-2.8.0-mcp-spec.json": "jrd-2.8.0-mcp-spec.json",
 }
 
 version = "v2.8.0"
