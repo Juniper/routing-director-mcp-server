@@ -7,9 +7,9 @@ import shutil
 files_copy = {
     "RoutingDirectorMCP.py": "RoutingDirectorMCP.py",
     "utils/lm_calls/paragon/constants.py": "utils/lm_calls/paragon/constants.py",
-    "mcp_setup/requirements.txt": "requirements.txt",
-    "mcp_setup/setup.py": "setup.py",
-    "mcp_setup/README.md": "README.md",
+    "requirements.txt": "requirements.txt",
+    "setup.py": "setup.py",
+    "README.md": "README.md",
 }
 
 version = "v2.8.0"
