@@ -1,0 +1,1183 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "routing-director",
+    "description": "Filtered version of Routing Director's OpenAPI 3.0.0 spec for the release 2.9.0, filtered exclusively for MCP use cases. This spec includes only the API endpoints relevant to MCP and excludes other endpoints, models, and details present in the full OpenAPI specification of Routing Director 2.9.0.",
+    "contact": {},
+    "version": "2.9.0"
+  },
+  "paths": {
+    "/api/v1/orgs/{org_id}/alarms/search": {
+      "get": {
+        "tags": [
+          "#ems Org > Alarms"
+        ],
+        "summary": "searchOrgAlarms",
+        "description": "",
+        "operationId": "searchOrgAlarms",
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "description": "",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "start",
+            "in": "query",
+            "description": "",
+            "style": "form",
+            "explode": true,
+            "schema": {
+              "type": "string",
+              "example": "2022-01-01"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {},
+            "content": {}
+          }
+        },
+        "deprecated": false,
+        "x-operation-settings": {
+          "CollectParameters": false,
+          "AllowDynamicQueryParameters": false,
+          "AllowDynamicFormParameters": false,
+          "IsMultiContentStreaming": false,
+          "ErrorTemplates": {},
+          "SkipAdditionalHeaders": false
+        },
+        "x-unitTests": [],
+        "x-mcp-server": {
+          "x-mcp": [
+            "ems"
+          ]
+        }
+      }
+    },
+    "/api/v1/orgs/{org_id}/alarms/{alarm_id}/ack": {
+      "post": {
+        "tags": [
+          "#ems Org > Alarms"
+        ],
+        "summary": "ackOrgAlarm",
+        "description": "",
+        "operationId": "ackOrgAlarm",
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "description": "",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "alarm_id",
+            "in": "path",
+            "description": "",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "{{alarm_id}}"
+            }
+          },
+          {
+            "name": "X-CSRFToken",
+            "in": "header",
+            "description": "",
+            "schema": {
+              "type": "string",
+              "example": "{{csrf_token}}"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "example": {
+                  "note": "maintenance window"
+                }
+              },
+              "example": {
+                "note": "maintenance window"
+              }
+            }
+          },
+          "required": false
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {},
+            "content": {}
+          }
+        },
+        "deprecated": false,
+        "x-operation-settings": {
+          "CollectParameters": false,
+          "AllowDynamicQueryParameters": false,
+          "AllowDynamicFormParameters": false,
+          "IsMultiContentStreaming": false,
+          "ErrorTemplates": {},
+          "SkipAdditionalHeaders": false
+        },
+        "x-unitTests": [],
+        "x-mcp-server": {
+          "x-mcp": [
+            "ems"
+          ]
+        }
+      }
+    },
+    "/api/v1/orgs/{org_id}/alarms/{alarm_id}/unack": {
+      "post": {
+        "tags": [
+          "#ems Org > Alarms"
+        ],
+        "summary": "unackOrgAlarm",
+        "description": "",
+        "operationId": "unackOrgAlarm",
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "description": "",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "alarm_id",
+            "in": "path",
+            "description": "",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "{{alarm_id}}"
+            }
+          },
+          {
+            "name": "X-CSRFToken",
+            "in": "header",
+            "description": "",
+            "schema": {
+              "type": "string",
+              "example": "{{csrf_token}}"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "example": {
+                  "note": "maintenance window"
+                }
+              },
+              "example": {
+                "note": "maintenance window"
+              }
+            }
+          },
+          "required": false
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {},
+            "content": {}
+          }
+        },
+        "deprecated": false,
+        "x-operation-settings": {
+          "CollectParameters": false,
+          "AllowDynamicQueryParameters": false,
+          "AllowDynamicFormParameters": false,
+          "IsMultiContentStreaming": false,
+          "ErrorTemplates": {},
+          "SkipAdditionalHeaders": false
+        },
+        "x-unitTests": [],
+        "x-mcp-server": {
+          "x-mcp": [
+            "ems"
+          ]
+        }
+      }
+    },
+    "/api/v1/orgs/{org_id}/syslog/messages/count": {
+      "get": {
+        "tags": [
+          "#observability Events"
+        ],
+        "summary": "Get_aggregated_count_of_syslog_messages_by_severity",
+        "description": "Returns the count of syslog messages grouped by severity level for the specified time range and filters. Use this for dashboard statistics and overview metrics",
+        "operationId": "Get_aggregated_count_of_syslog_messages_by_severity",
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "description": "Organization ID (UUID format). All syslog messages are scoped to devices within this organization.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "5f133def-0150-47d8-a0bc-8e7c2a969aac"
+            }
+          },
+          {
+            "name": "duration",
+            "in": "query",
+            "description": "Time duration for filtering messages. Mutually exclusive with start/end parameters. If neither duration nor start/end is provided, defaults to last 1 hour",
+            "style": "form",
+            "explode": true,
+            "schema": {
+              "pattern": "^\\d+[smhd]$",
+              "type": "string",
+              "default": "1h",
+              "example": "15m"
+            },
+            "examples": {
+              "15_minutes": {
+                "summary": "Last 15 minutes",
+                "value": "15m"
+              },
+              "2_hours": {
+                "summary": "Last 2 hours",
+                "value": "2h"
+              },
+              "7_days": {
+                "summary": "Last 7 days",
+                "value": "7d"
+              }
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Maximum number of syslog messages to return per page",
+            "style": "form",
+            "explode": true,
+            "schema": {
+              "maximum": 1000.0,
+              "minimum": 1.0,
+              "type": "integer",
+              "format": "int32",
+              "default": 100
+            }
+          },
+          {
+            "name": "start",
+            "in": "query",
+            "description": "Start timestamp (Unix epoch) from which to fetch syslog messages",
+            "style": "form",
+            "explode": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "end",
+            "in": "query",
+            "description": "End timestamp (Unix epoch) till which to fetch syslog messages",
+            "style": "form",
+            "explode": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "severity",
+            "in": "query",
+            "description": "Filter messages at or above the specified severity level. Severity hierarchy (lowest to highest): Warn < Error < Critical < Alert < Emergency. For example, 'Error' returns Error, Critical, Alert, and Emergency messages.",
+            "style": "form",
+            "explode": true,
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/severity2"
+                },
+                {
+                  "description": "Filter messages at or above the specified severity level. Severity hierarchy (lowest to highest): Warn < Error < Critical < Alert < Emergency. For example, 'Error' returns Error, Critical, Alert, and Emergency messages."
+                }
+              ]
+            }
+          },
+          {
+            "name": "mac",
+            "in": "query",
+            "description": "MAC address of the device to filter by. Can take multiple MAC addresses separated by comma",
+            "style": "form",
+            "explode": true,
+            "schema": {
+              "pattern": "^([0-9A-Fa-f]{12})(,([0-9A-Fa-f]{12}))*$",
+              "type": "string"
+            }
+          },
+          {
+            "name": "site_id",
+            "in": "query",
+            "description": "To filter by site-id, can also take comma-separated list of site IDs (UUIDs)",
+            "style": "form",
+            "explode": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "message",
+            "in": "query",
+            "description": "Search in message column of the syslog messages. Use quotes for exact match/contains, asterisk for startswith, no quotes for fuzzy search",
+            "style": "form",
+            "explode": true,
+            "schema": {
+              "type": "string",
+              "example": "\"exited\""
+            },
+            "examples": {
+              "contains": {
+                "summary": "Contains exact string 'exited' (case-sensitive)",
+                "value": "\"exited\""
+              },
+              "startswith": {
+                "summary": "Starts with string 'exit' ",
+                "value": "\"exit*\""
+              },
+              "fuzzy_search": {
+                "summary": "Fuzzy search for similar text (most flexible)",
+                "value": "connection timeout"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful operation",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiV1OrgsSyslogMessagesCountResponse"
+                    },
+                    {
+                      "example": {
+                        "results": [
+                          {
+                            "severity": "Error",
+                            "count": 72
+                          },
+                          {
+                            "severity": "Warn",
+                            "count": 28
+                          }
+                        ],
+                        "start": 1760056483,
+                        "end": 1760058283,
+                        "limit": 15,
+                        "distinct": "severity",
+                        "total": 2
+                      }
+                    }
+                  ]
+                },
+                "examples": {
+                  "with_data": {
+                    "summary": "Response with syslog message counts",
+                    "description": "Example response when syslog messages are found and counted by severity",
+                    "value": {
+                      "results": [
+                        {
+                          "severity": "Error",
+                          "count": 72
+                        },
+                        {
+                          "severity": "Warn",
+                          "count": 28
+                        }
+                      ],
+                      "start": 1760056483,
+                      "end": 1760058283,
+                      "limit": 15,
+                      "distinct": "severity",
+                      "total": 2
+                    }
+                  },
+                  "no_data": {
+                    "summary": "Response with no syslog messages",
+                    "description": "Example response when no syslog messages are found matching the query criteria",
+                    "value": {
+                      "results": [],
+                      "start": 1759451647,
+                      "end": 1760056447,
+                      "limit": 15,
+                      "distinct": "severity",
+                      "total": 0
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request - Invalid parameters or malformed query",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiV1OrgsSyslogMessagesCount400Error1"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Invalid or missing authentication credentials",
+            "headers": {},
+            "content": {}
+          },
+          "403": {
+            "description": "Forbidden - Insufficient permissions to access the resource",
+            "headers": {},
+            "content": {}
+          },
+          "404": {
+            "description": "Not Found",
+            "headers": {},
+            "content": {}
+          },
+          "500": {
+            "description": "Internal Server Error - An unexpected error occurred",
+            "headers": {},
+            "content": {}
+          }
+        },
+        "deprecated": false,
+        "x-operation-settings": {
+          "CollectParameters": false,
+          "AllowDynamicQueryParameters": false,
+          "AllowDynamicFormParameters": false,
+          "IsMultiContentStreaming": false,
+          "ErrorTemplates": {},
+          "SkipAdditionalHeaders": false
+        },
+        "x-unitTests": [
+          {
+            "request": {
+              "method": "GET",
+              "uri": "/api/v1/orgs/5f133def-0150-47d8-a0bc-8e7c2a969aac/syslog/messages/count?duration=1h&limit=100&severity=Warn&message=%22exited%22"
+            },
+            "expectedResponse": {
+              "x-allowExtraHeaders": true,
+              "x-bodyMatchMode": "KEYS",
+              "x-arrayOrderedMatching": false,
+              "x-arrayCheckCount": false,
+              "x-matchResponseSchema": true,
+              "statusCode": "200",
+              "headers": {
+                "Content-Type": "application/json"
+              },
+              "body": "{\"results\":[{\"severity\":\"Error\",\"count\":72},{\"severity\":\"Warn\",\"count\":28}],\"start\":1760056483,\"end\":1760058283,\"limit\":15,\"distinct\":\"severity\",\"total\":2}"
+            },
+            "x-testShouldPass": true,
+            "x-testEnabled": true,
+            "x-testName": "Test Get_aggregated_count_of_syslog_messages_by_severity",
+            "x-testDescription": "Returns the count of syslog messages grouped by severity level for the specified time range and filters. Use this for dashboard statistics and overview metrics"
+          }
+        ],
+        "x-mcp-server": {
+          "x-mcp": [
+            "device-kpi"
+          ]
+        }
+      }
+    },
+    "/api/v1/orgs/{org_id}/syslog/messages/search": {
+      "get": {
+        "tags": [
+          "#observability Events"
+        ],
+        "summary": "Search_and_retrieve_syslog_messages",
+        "description": "Search and retrieve syslog messages for an organization with flexible filtering options.\n\nTime Range Parameters:\n- Use 'duration' for relative time (e.g., last 2 hours)\n- Use 'start' and 'end' for absolute time ranges (Unix epoch in seconds)\n- These are mutually exclusive. If both provided, start/end takes precedence\n- If neither provided, defaults to last 12 hours\n\nPagination:\n- Use 'limit' to control page size (max 1000)\n- Results are sorted by timestamp descending by default\n- For large result sets, use multiple requests with adjusted start/end times\n\nTimestamps:\n- All timestamp parameters (start, end) use Unix epoch in seconds\n- Response timestamps are in milliseconds\n- All times are in UTC",
+        "operationId": "Search_and_retrieve_syslog_messages",
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "description": "Organization ID (UUID format). All syslog messages are scoped to devices within this organization.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "5f133def-0150-47d8-a0bc-8e7c2a969aac"
+            }
+          },
+          {
+            "name": "duration",
+            "in": "query",
+            "description": "Time duration for filtering messages. Mutually exclusive with start/end parameters. If neither duration nor start/end is provided, defaults to last 1 hour",
+            "style": "form",
+            "explode": true,
+            "schema": {
+              "pattern": "^\\d+[smhd]$",
+              "type": "string",
+              "default": "1h",
+              "example": "15m"
+            },
+            "examples": {
+              "15_minutes": {
+                "summary": "Last 15 minutes",
+                "value": "15m"
+              },
+              "2_hours": {
+                "summary": "Last 2 hours",
+                "value": "2h"
+              },
+              "7_days": {
+                "summary": "Last 7 days",
+                "value": "7d"
+              }
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Maximum number of syslog messages to return per page",
+            "style": "form",
+            "explode": true,
+            "schema": {
+              "maximum": 1000.0,
+              "minimum": 1.0,
+              "type": "integer",
+              "format": "int32",
+              "default": 100
+            }
+          },
+          {
+            "name": "start",
+            "in": "query",
+            "description": "Start timestamp (Unix epoch) from which to fetch syslog messages",
+            "style": "form",
+            "explode": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "end",
+            "in": "query",
+            "description": "End timestamp (Unix epoch) till which to fetch syslog messages",
+            "style": "form",
+            "explode": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "severity",
+            "in": "query",
+            "description": "Filter messages at or above the specified severity level. Severity hierarchy (lowest to highest): Warn < Error < Critical < Alert < Emergency. For example, 'Error' returns Error, Critical, Alert, and Emergency messages.",
+            "style": "form",
+            "explode": true,
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/severity2"
+                },
+                {
+                  "description": "Filter messages at or above the specified severity level. Severity hierarchy (lowest to highest): Warn < Error < Critical < Alert < Emergency. For example, 'Error' returns Error, Critical, Alert, and Emergency messages."
+                }
+              ]
+            }
+          },
+          {
+            "name": "mac",
+            "in": "query",
+            "description": "MAC address of the device to filter by. Can take multiple MAC addresses separated by comma",
+            "style": "form",
+            "explode": true,
+            "schema": {
+              "pattern": "^([0-9A-Fa-f]{12})(,([0-9A-Fa-f]{12}))*$",
+              "type": "string"
+            }
+          },
+          {
+            "name": "site_id",
+            "in": "query",
+            "description": "To filter by site-id, can also take comma-separated list of site IDs (UUIDs)",
+            "style": "form",
+            "explode": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "description": "Sort the syslog messages by field and order. Prefix with '-' for descending order",
+            "style": "form",
+            "explode": true,
+            "schema": {
+              "type": "string",
+              "example": "timestamp"
+            },
+            "examples": {
+              "timestamp_ascending": {
+                "summary": "Timestamp ascending",
+                "value": "timestamp"
+              },
+              "timestamp_descending": {
+                "summary": "Timestamp descending",
+                "value": "-timestamp"
+              },
+              "host_ascending": {
+                "summary": "Host ascending",
+                "value": "host"
+              },
+              "host_descending": {
+                "summary": "Host descending",
+                "value": "-host"
+              }
+            }
+          },
+          {
+            "name": "message",
+            "in": "query",
+            "description": "Search in message column of the syslog messages. Use quotes for exact match/contains, asterisk for startswith, no quotes for fuzzy search",
+            "style": "form",
+            "explode": true,
+            "schema": {
+              "type": "string",
+              "example": "\"exited\""
+            },
+            "examples": {
+              "contains": {
+                "summary": "Contains exact string 'exited' (case-sensitive)",
+                "value": "\"exited\""
+              },
+              "startswith": {
+                "summary": "Starts with string 'exit' ",
+                "value": "\"exit*\""
+              },
+              "fuzzy_search": {
+                "summary": "Fuzzy search for similar text (most flexible)",
+                "value": "connection timeout"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful operation",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiV1OrgsSyslogMessagesSearchResponse"
+                    },
+                    {
+                      "example": {
+                        "results": [
+                          {
+                            "severity": "Warn",
+                            "raw_message": "<28>1 2025-10-09T17:38:21.372-07:00 device1 inetd 25460 - - /usr/sbin/sshd[23061]: exited, status 255",
+                            "procid": "25460",
+                            "msgid": "-",
+                            "message": "/usr/sbin/sshd[23061]: exited, status 255",
+                            "version": "1",
+                            "mac": "100000000023",
+                            "timestamp": 1760056701000,
+                            "appname": "inetd",
+                            "org_id": "5f133def-0150-47d8-a0bc-8e7c2a969aac",
+                            "host": "device1",
+                            "facility": "3",
+                            "received_timestamp": 1760056855000
+                          },
+                          {
+                            "severity": "Error",
+                            "raw_message": "<27>1 2025-10-09T17:37:37.901-07:00 device1 jsd 25535 LIBJSD_GRPC_STACK_ERROR [junos@2636.1.1.1.4.82.15 message=\"Operation failed: tag=0xf48c77c0, error=CANCELLED\"] GRPC stack has detected an error while executing RPC. Message = Operation failed: tag=0xf48c77c0, error=CANCELLED",
+                            "procid": "25535",
+                            "msgid": "LIBJSD_GRPC_STACK_ERROR",
+                            "message": "GRPC stack has detected an error while executing RPC. Message = Operation failed: tag=0xf48c77c0, error=CANCELLED",
+                            "version": "1",
+                            "mac": "100000000023",
+                            "timestamp": 1760056657000,
+                            "appname": "jsd",
+                            "org_id": "5f133def-0150-47d8-a0bc-8e7c2a969aac",
+                            "host": "device1",
+                            "facility": "3",
+                            "received_timestamp": 1760056675000
+                          }
+                        ],
+                        "start": 1760055163,
+                        "end": 1760056963,
+                        "limit": 15,
+                        "total": 98
+                      }
+                    }
+                  ]
+                },
+                "examples": {
+                  "with_data": {
+                    "summary": "Response with syslog messages",
+                    "description": "Example response when syslog messages are found matching the query criteria",
+                    "value": {
+                      "results": [
+                        {
+                          "severity": "Warn",
+                          "raw_message": "<28>1 2025-10-09T17:38:21.372-07:00 device1 inetd 25460 - - /usr/sbin/sshd[23061]: exited, status 255",
+                          "procid": "25460",
+                          "msgid": "-",
+                          "message": "/usr/sbin/sshd[23061]: exited, status 255",
+                          "version": "1",
+                          "mac": "100000000023",
+                          "timestamp": 1760056701000,
+                          "appname": "inetd",
+                          "org_id": "5f133def-0150-47d8-a0bc-8e7c2a969aac",
+                          "host": "device1",
+                          "facility": "3",
+                          "received_timestamp": 1760056855000
+                        },
+                        {
+                          "severity": "Error",
+                          "raw_message": "<27>1 2025-10-09T17:37:37.901-07:00 device1 jsd 25535 LIBJSD_GRPC_STACK_ERROR [junos@2636.1.1.1.4.82.15 message=\"Operation failed: tag=0xf48c77c0, error=CANCELLED\"] GRPC stack has detected an error while executing RPC. Message = Operation failed: tag=0xf48c77c0, error=CANCELLED",
+                          "procid": "25535",
+                          "msgid": "LIBJSD_GRPC_STACK_ERROR",
+                          "message": "GRPC stack has detected an error while executing RPC. Message = Operation failed: tag=0xf48c77c0, error=CANCELLED",
+                          "version": "1",
+                          "mac": "100000000023",
+                          "timestamp": 1760056657000,
+                          "appname": "jsd",
+                          "org_id": "5f133def-0150-47d8-a0bc-8e7c2a969aac",
+                          "host": "device1",
+                          "facility": "3",
+                          "received_timestamp": 1760056675000
+                        }
+                      ],
+                      "start": 1760055163,
+                      "end": 1760056963,
+                      "limit": 15,
+                      "total": 98
+                    }
+                  },
+                  "no_data": {
+                    "summary": "Response with no syslog messages",
+                    "description": "Example response when no syslog messages are found matching the query criteria",
+                    "value": {
+                      "results": [],
+                      "start": 1759451647,
+                      "end": 1760056447,
+                      "limit": 15,
+                      "total": 0
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request - Invalid parameters or malformed query",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiV1OrgsSyslogMessagesSearch400Error1"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Invalid or missing authentication credentials",
+            "headers": {},
+            "content": {}
+          },
+          "403": {
+            "description": "Forbidden - Insufficient permissions to access the resource",
+            "headers": {},
+            "content": {}
+          },
+          "404": {
+            "description": "Not Found",
+            "headers": {},
+            "content": {}
+          },
+          "500": {
+            "description": "Internal Server Error - An unexpected error occurred",
+            "headers": {},
+            "content": {}
+          }
+        },
+        "deprecated": false,
+        "x-operation-settings": {
+          "CollectParameters": false,
+          "AllowDynamicQueryParameters": false,
+          "AllowDynamicFormParameters": false,
+          "IsMultiContentStreaming": false,
+          "ErrorTemplates": {},
+          "SkipAdditionalHeaders": false
+        },
+        "x-unitTests": [
+          {
+            "request": {
+              "method": "GET",
+              "uri": "/api/v1/orgs/5f133def-0150-47d8-a0bc-8e7c2a969aac/syslog/messages/search?duration=1h&limit=100&severity=Warn&sort=timestamp&message=%22exited%22"
+            },
+            "expectedResponse": {
+              "x-allowExtraHeaders": true,
+              "x-bodyMatchMode": "KEYS",
+              "x-arrayOrderedMatching": false,
+              "x-arrayCheckCount": false,
+              "x-matchResponseSchema": true,
+              "statusCode": "200",
+              "headers": {
+                "Content-Type": "application/json"
+              },
+              "body": "{\"results\":[{\"severity\":\"Warn\",\"raw_message\":\"<28>1 2025-10-09T17:38:21.372-07:00 device1 inetd 25460 - - /usr/sbin/sshd[23061]: exited, status 255\",\"procid\":\"25460\",\"msgid\":\"-\",\"message\":\"/usr/sbin/sshd[23061]: exited, status 255\",\"version\":\"1\",\"mac\":\"100000000023\",\"timestamp\":1760056701000,\"appname\":\"inetd\",\"org_id\":\"5f133def-0150-47d8-a0bc-8e7c2a969aac\",\"host\":\"device1\",\"facility\":\"3\",\"received_timestamp\":1760056855000},{\"severity\":\"Error\",\"raw_message\":\"<27>1 2025-10-09T17:37:37.901-07:00 device1 jsd 25535 LIBJSD_GRPC_STACK_ERROR [junos@2636.1.1.1.4.82.15 message=\\\"Operation failed: tag=0xf48c77c0, error=CANCELLED\\\"] GRPC stack has detected an error while executing RPC. Message = Operation failed: tag=0xf48c77c0, error=CANCELLED\",\"procid\":\"25535\",\"msgid\":\"LIBJSD_GRPC_STACK_ERROR\",\"message\":\"GRPC stack has detected an error while executing RPC. Message = Operation failed: tag=0xf48c77c0, error=CANCELLED\",\"version\":\"1\",\"mac\":\"100000000023\",\"timestamp\":1760056657000,\"appname\":\"jsd\",\"org_id\":\"5f133def-0150-47d8-a0bc-8e7c2a969aac\",\"host\":\"device1\",\"facility\":\"3\",\"received_timestamp\":1760056675000}],\"start\":1760055163,\"end\":1760056963,\"limit\":15,\"total\":98}"
+            },
+            "x-testShouldPass": true,
+            "x-testEnabled": true,
+            "x-testName": "Test Search_and_retrieve_syslog_messages",
+            "x-testDescription": "Search and retrieve syslog messages for an organization with flexible filtering options.\n\nTime Range Parameters:\n- Use 'duration' for relative time (e.g., last 2 hours)\n- Use 'start' and 'end' for absolute time ranges (Unix epoch in seconds)\n- These are mutually exclusive. If both provided, start/end takes precedence\n- If neither provided, defaults to last 12 hours\n\nPagination:\n- Use 'limit' to control page size (max 1000)\n- Results are sorted by timestamp descending by default\n- For large result sets, use multiple requests with adjusted start/end times\n\nTimestamps:\n- All timestamp parameters (start, end) use Unix epoch in seconds\n- Response timestamps are in milliseconds\n- All times are in UTC"
+          }
+        ],
+        "x-mcp-server": {
+          "x-mcp": [
+            "device-kpi"
+          ]
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ApiV1OrgsSyslogMessagesCount400Error1": {
+        "title": "ApiV1OrgsSyslogMessagesCount400Error1",
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string",
+            "description": "Error message"
+          },
+          "details": {
+            "type": "string",
+            "description": "Additional error details"
+          }
+        }
+      },
+      "ApiV1OrgsSyslogMessagesCountResponse": {
+        "title": "ApiV1OrgsSyslogMessagesCountResponse",
+        "required": [
+          "results",
+          "start",
+          "end",
+          "limit",
+          "total"
+        ],
+        "type": "object",
+        "properties": {
+          "results": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Results2"
+            },
+            "description": ""
+          },
+          "start": {
+            "type": "integer",
+            "description": "Start timestamp (Unix epoch) of the query range",
+            "format": "int32"
+          },
+          "end": {
+            "type": "integer",
+            "description": "End timestamp (Unix epoch) of the query range",
+            "format": "int32"
+          },
+          "limit": {
+            "type": "integer",
+            "description": "Maximum number of results returned per page",
+            "format": "int32"
+          },
+          "distinct": {
+            "type": "string",
+            "description": "Field used for counting distinct values (e.g., 'severity')"
+          },
+          "total": {
+            "type": "integer",
+            "description": "Total number of distinct groups returned",
+            "format": "int32"
+          }
+        }
+      },
+      "ApiV1OrgsSyslogMessagesSearch400Error1": {
+        "title": "ApiV1OrgsSyslogMessagesSearch400Error1",
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string",
+            "description": "Error message"
+          },
+          "details": {
+            "type": "string",
+            "description": "Additional error details"
+          }
+        }
+      },
+      "ApiV1OrgsSyslogMessagesSearchResponse": {
+        "title": "ApiV1OrgsSyslogMessagesSearchResponse",
+        "required": [
+          "results",
+          "start",
+          "end",
+          "limit",
+          "total"
+        ],
+        "type": "object",
+        "properties": {
+          "results": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Results1"
+            },
+            "description": ""
+          },
+          "start": {
+            "type": "integer",
+            "description": "Start timestamp (Unix epoch) of the query range",
+            "format": "int32"
+          },
+          "end": {
+            "type": "integer",
+            "description": "End timestamp (Unix epoch) of the query range",
+            "format": "int32"
+          },
+          "limit": {
+            "type": "integer",
+            "description": "Maximum number of results returned per page",
+            "format": "int32"
+          },
+          "total": {
+            "type": "integer",
+            "description": "Total number of syslog messages matching the query",
+            "format": "int32"
+          }
+        }
+      },
+      "Results1": {
+        "title": "Results1",
+        "required": [
+          "severity",
+          "raw_message",
+          "message",
+          "version",
+          "mac",
+          "timestamp",
+          "org_id",
+          "host",
+          "facility",
+          "received_timestamp"
+        ],
+        "type": "object",
+        "properties": {
+          "severity": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Severity11"
+              },
+              {
+                "description": "Syslog severity level"
+              }
+            ]
+          },
+          "raw_message": {
+            "type": "string",
+            "description": "Complete raw syslog message as received"
+          },
+          "procid": {
+            "type": "string",
+            "description": "Process ID that generated the message"
+          },
+          "msgid": {
+            "type": "string",
+            "description": "Message ID from the structured data"
+          },
+          "message": {
+            "type": "string",
+            "description": "Parsed message content"
+          },
+          "version": {
+            "type": "string",
+            "description": "Syslog protocol version"
+          },
+          "mac": {
+            "type": "string",
+            "description": "MAC address of the device that sent the message"
+          },
+          "timestamp": {
+            "type": "integer",
+            "description": "Unix timestamp in milliseconds when the message was generated",
+            "format": "int32"
+          },
+          "appname": {
+            "type": "string",
+            "description": "Application or process name that generated the message"
+          },
+          "org_id": {
+            "type": "string",
+            "description": "Organization ID",
+            "format": "uuid"
+          },
+          "host": {
+            "type": "string",
+            "description": "Hostname or IP address of the device"
+          },
+          "facility": {
+            "type": "string",
+            "description": "Syslog facility code"
+          },
+          "received_timestamp": {
+            "type": "integer",
+            "description": "Unix timestamp in milliseconds when the message was received",
+            "format": "int32"
+          }
+        }
+      },
+      "Results2": {
+        "title": "Results2",
+        "required": [
+          "severity",
+          "count"
+        ],
+        "type": "object",
+        "properties": {
+          "severity": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Severity11"
+              },
+              {
+                "description": "Syslog severity level"
+              }
+            ]
+          },
+          "count": {
+            "type": "integer",
+            "description": "Number of syslog messages for this severity level",
+            "format": "int32"
+          }
+        }
+      },
+      "Severity11": {
+        "title": "Severity11",
+        "enum": [
+          "Emergency",
+          "Alert",
+          "Critical",
+          "Error",
+          "Warn"
+        ],
+        "type": "string",
+        "description": "Syslog severity level",
+        "x-enum-elements": [
+          {
+            "name": "Emergency",
+            "description": ""
+          },
+          {
+            "name": "Alert",
+            "description": ""
+          },
+          {
+            "name": "Critical",
+            "description": ""
+          },
+          {
+            "name": "Error",
+            "description": ""
+          },
+          {
+            "name": "Warn",
+            "description": ""
+          }
+        ]
+      },
+      "severity2": {
+        "title": "severity2",
+        "enum": [
+          "Warn",
+          "Error",
+          "Critical",
+          "Alert",
+          "Emergency"
+        ],
+        "type": "string",
+        "x-enum-elements": [
+          {
+            "name": "Warn",
+            "description": ""
+          },
+          {
+            "name": "Error",
+            "description": ""
+          },
+          {
+            "name": "Critical",
+            "description": ""
+          },
+          {
+            "name": "Alert",
+            "description": ""
+          },
+          {
+            "name": "Emergency",
+            "description": ""
+          }
+        ]
+      }
+    },
+    "securitySchemes": {
+      "basicAuth": {
+        "type": "http",
+        "scheme": "basic"
+      },
+      "APIKeyHeader": {
+        "type": "apiKey",
+        "name": "Authorization",
+        "in": "header"
+      }
+    }
+  },
+  "security": [
+    {
+      "basicAuth": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "#ems Org > Alarms"
+    },
+    {
+      "name": "#observability Events",
+      "description": "Events APIs"
+    }
+  ]
+}
