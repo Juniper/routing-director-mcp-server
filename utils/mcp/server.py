@@ -1,13 +1,13 @@
 import json
 import os
 import logging
+import pathlib
 from typing import Optional
-
 from fastmcp import FastMCP
 
 from utils.mcp.auth_manager import TokenManager
 from utils.mcp.utils import update_openapi_specs_with_tags
-from utils.mcp.constants import SERVER_NAME, DEFAULT_OPEN_API_SPEC_PATH
+from utils.mcp.constants import SERVER_NAME, DEFAULT_OPEN_API_SPEC
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -99,9 +99,10 @@ def create_mcp_server(args):
             spec = json.load(fh)
     else:
         try:
-            if os.path.exists(DEFAULT_OPEN_API_SPEC_PATH):
-                logger.info(f"Loading default OpenAPI spec from {DEFAULT_OPEN_API_SPEC_PATH}")
-                with open(DEFAULT_OPEN_API_SPEC_PATH) as fh:
+            default_openapi_spec_full_path = str(pathlib.Path(__file__).parent.parent.parent / DEFAULT_OPEN_API_SPEC)
+            if os.path.exists(default_openapi_spec_full_path):
+                logger.info(f"Loading default OpenAPI spec from {default_openapi_spec_full_path}")
+                with open(default_openapi_spec_full_path) as fh:
                     spec = json.load(fh)
         except Exception as e:
             logger.error(f"Failed to load default OpenAPI spec: {e}")
@@ -127,6 +128,13 @@ def create_mcp_server(args):
 
     _load_mcp_plugins()
     mcp.prompt(f"Organization ID or org id is {config.get('org_id')}")
+
+    # List all registered tools before starting the server
+    try:
+        tools = mcp._tool_manager._tools
+        logger.info("Total registered MCP tools %d: %s", len(tools), sorted(tools.keys()))
+    except Exception as e:
+        logger.warning("Could not list registered tools: %s", e)
 
     # Prepare SSL config if provided
     uvicorn_config = None

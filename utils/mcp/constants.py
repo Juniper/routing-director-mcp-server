@@ -1,7 +1,5 @@
-import os
 SERVER_NAME = "Juniper Routing Director"
-DEFAULT_OPEN_API_SPEC_PATH = 'jrd-2.8.0-mcp-spec.json'
-
+DEFAULT_OPEN_API_SPEC = "jrd-2.8.0-mcp-spec.json"
 MCP_EXTENSION_KEY = 'x-mcp-server'
 MCP_EXTENSION_LEAF_KEY = 'x-mcp'
 
