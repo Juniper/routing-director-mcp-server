@@ -1,3 +1,5 @@
+<!-- mcp-name: io.github.Juniper/routing-director-mcp-server -->
+
 # Routing Director MCP Server
 
 An MCP (Model Context Protocol) server that integrates with Juniper's Routing Director platform, providing intelligent access to network routing, assurance, optimization, and intelligence capabilities.

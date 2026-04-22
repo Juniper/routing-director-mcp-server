@@ -1,0 +1,11 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.Juniper/routing-director-mcp-server",
+  "title": "Juniper Routing Director MCP Server",
+  "description": "MCP server to integrate with Juniper Routing Director",
+  "repository": {
+    "url": "https://github.com/Juniper/routing-director-mcp-server",
+    "source": "github"
+  },
+  "version": "2.8.0"
+}
