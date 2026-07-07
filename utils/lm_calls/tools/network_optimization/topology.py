@@ -4,9 +4,12 @@ import logging
 
 from utils.lm_calls.paragon.constants import (PAPI_URL, con, USE_EXTERNAL_API)
 from utils.lm_calls.tools.ems.config_template import ConfigTemplate
+from utils.lm_calls.tools.helper import validate_org_id
 
 logger = logging.getLogger(__name__)
 
+
+@validate_org_id
 def get_topology_list(org_id: str) -> str:
     """
     Retrieves the list of topologies from the Routing Director
@@ -18,6 +21,8 @@ def get_topology_list(org_id: str) -> str:
     resp = con.request(method="GET", url=f"/topology/api/v1/orgs/{org_id}")
     return json.dumps(resp.json(), indent=2)
 
+
+@validate_org_id
 def get_nodes_in_topology(org_id: str, topology_id: str, page: int =1, per_page: int =1) -> str:
     """
     Retrieves nodes in a topology
@@ -37,6 +42,8 @@ def get_nodes_in_topology(org_id: str, topology_id: str, page: int =1, per_page:
     resp = con.request(method="GET", url=f"/topology/api/v1/orgs/{org_id}/{topology_id}/nodes", params=params)
     return json.dumps(resp.json(), indent=2)
 
+
+@validate_org_id
 def get_links_in_topology(org_id: str, topology_id: str, page: int =1, per_page: int =1) -> str:
     """
     Retrieves links in a topology
@@ -56,6 +63,8 @@ def get_links_in_topology(org_id: str, topology_id: str, page: int =1, per_page:
     resp = con.request(method="GET", url=f"/topology/api/v1/orgs/{org_id}/{topology_id}/links", params=params)
     return json.dumps(resp.json(), indent=2)
 
+
+@validate_org_id
 def get_lsps_in_topology(org_id: str, topology_id: str, page: int =1, per_page: int =1) -> str:
     """
     Retrieves LSP's in a topology.
@@ -75,7 +84,9 @@ def get_lsps_in_topology(org_id: str, topology_id: str, page: int =1, per_page: 
     resp = con.request(method="GET", url=f"/topology/api/v1/orgs/{org_id}/{topology_id}/te-lsps", params=params)
     return json.dumps(resp.json(), indent=2)
 
+
 # NOTE: Not good tool. Only for demos
+@validate_org_id
 def create_lsp(org_id: str, topology_id: str, payload: dict) -> str:
     """
     Creates LSPs between 2 nodes.

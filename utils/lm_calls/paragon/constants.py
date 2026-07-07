@@ -1,5 +1,4 @@
 import os
-from utils.lm_calls.connection.client_connection import create_routing_director_client
 
 X_FROM = "ask-paragon"
 
@@ -17,6 +16,8 @@ PAPI_URL = get_url("PAPI_URL", "http://papi-internal.papi:8000/")
 API_AGG_URL = get_url("API_AGG_URL", "http://api-aggregator.epic:12000/")
 INSIGHTS_CONFIG_SERVER = get_url("INSIGHTS_CONFIG_SERVER", "http://config-server.healthbot:9000/")
 INSIGHTS_API_SERVER = get_url("INSIGHTS_API_SERVER", "http://api-server.healthbot:9000/")
+# x-hb-token for the Insights "custom" topic/user namespace
+INSIGHTS_CUSTOM_HB_TOKEN = "$9$o/Ji.5QntpBz3" #nosec
 INSIGHTS_VM_AUTH = get_url("INSIGHTS_VM_AUTH", "http://vmauth-victoria-metrics-auth.healthbot:8427/")
 FH_ORDER_MGMT = get_url("FH_ORDER_MGMT", "http://order-management.foghorn:11000/")
 OCTALK_RPC = get_url("OCTALK_RPC", "http://octalk-rpc.northstar:80/rpc/v1/execute")
@@ -35,8 +36,42 @@ VM_PWD = os.getenv("VM_PWD")
 EOP_HOST = os.getenv("EOP_HOST")
 
 BLACKLIST_REQUEST_JUNOS_OPERATIONS = [
-    "reboot", "shutdown", "power-off", "delete", "halt", "zeriorize", "reload", "terminate", "upgrade", "update"
+    "reboot", "shutdown", "power-off", "delete", "halt", "zeroize", "reload", "terminate", "upgrade", "update"
 ]
 BLACKLIST_REQUEST_JUNOS_COMMANDS_REGEX = "request .* (" + "|".join(BLACKLIST_REQUEST_JUNOS_OPERATIONS) + ")"
 
-con = create_routing_director_client()
+
+ALERT_SEVERITIES = ["SEVERITY_CRITICAL", "SEVERITY_MAJOR", "SEVERITY_MINOR", "SEVERITY_WARNING", "SEVERITY_INFO"]
+
+# Junos XML/RPC tags that must never be run through operational command tools.
+# Extend this list as needed to block additional configuration-changing RPCs.
+BLOCKED_JUNOS_RPC_TAGS = [
+    "load-configuration",
+    "delete-config",
+    "edit-config",
+]
+
+
+class _RoutingDirectorClientProxy:
+    """Stateless proxy that forwards attribute access (e.g. ``con.request``,
+    ``con.org_id``) to the per-request Routing Director client stored in the
+    request context.
+
+    This lets tool modules keep importing a module-level ``con`` while the
+    actual client is created fresh per query (per org) and looked up at call
+    time via ``get_con()``.
+    """
+
+    def __getattr__(self, name):
+        # Imported lazily to avoid import cycles at module load time.
+        from utils.lm_calls.connection.client_connection import get_con
+        client = get_con()
+        if client is None:
+            raise RuntimeError(
+                "Routing Director client is not initialized for this request. "
+                "Ensure create_agent()/set_con() ran before invoking tools."
+            )
+        return getattr(client, name)
+
+
+con = _RoutingDirectorClientProxy()

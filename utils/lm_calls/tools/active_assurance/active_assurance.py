@@ -4,7 +4,7 @@ from dateutil import parser
 import logging
 import urllib.parse
 from utils.lm_calls.paragon.constants import X_FROM, PAA_URL, ALERTMANAGER_URL, METRICS_SERVICE_URL, con, USE_EXTERNAL_API
-from utils.lm_calls.tools.helper import get_full_eop_host
+from utils.lm_calls.tools.helper import get_full_eop_host, validate_org_id
 from typing import Optional, Dict, Any, List, Tuple
 
 
@@ -176,6 +176,7 @@ def format_interface(interface):
     }
 
 
+@validate_org_id
 def format_test_agent(org_id, test_agent, plugin_name: str = None):
     id = test_agent['id']
     name = test_agent['metadata']['name']
@@ -259,6 +260,7 @@ def format_test_agent(org_id, test_agent, plugin_name: str = None):
     return formatted_test_agent_info
 
 
+@validate_org_id
 def get_streams_count(org_id, ta_id: str, plugin_name: str = None, ):
     """
     List all the streams for a test agent. Also check the count of measurement by plugin_name
@@ -307,6 +309,7 @@ def get_streams_count(org_id, ta_id: str, plugin_name: str = None, ):
             "stream_count_per_plugin": stream_per_plugin}
 
 
+@validate_org_id
 def format_task(org_id, task):
     # Get 5 most severe alerts and total alert count for this Test Agent
     alerts = _alertmanager_get(f'/alert-manager/api/v1/orgs/{org_id}/alerts', params={
@@ -334,6 +337,7 @@ def format_task(org_id, task):
     }
 
 
+@validate_org_id
 def active_assurance_list_test_agents_sync(
         org_id: str,
         action: str,
@@ -398,6 +402,7 @@ def active_assurance_list_test_agents_sync(
     return test_agents
 
 
+@validate_org_id
 def list_worst_test_agents(org_id) -> str:
     """
     Get a list of upto 5 Test Agents with the most major or critical Alerts.
@@ -437,6 +442,7 @@ def list_worst_test_agents(org_id) -> str:
     return json.dumps(test_agents)
 
 
+@validate_org_id
 def list_test_agents(org_id: str, id: str = None, name: str = None, site_name: str = None, site_addr: str = None,
                      device_mac: str = None, device_name: str = None, plugin_name: str = None,
                      aggregation_action: str = None) -> str:
@@ -549,6 +555,7 @@ def test_agent_aggregated_with_measurements(test_agent_details: list[any], aggre
 ########## Monitor ##########
 
 
+@validate_org_id
 def format_monitor(org_id, monitor):
     # Get 5 most severe alerts and total alert count for this Test Agent
     # alerts = _alertmanager_get(f'/alert-manager/api/v1/orgs/{org_id}/alerts', params={
@@ -577,6 +584,7 @@ def format_monitor(org_id, monitor):
     }
 
 
+@validate_org_id
 def active_assurance_list_monitors_sync(org_id: str, action: str, id: str, name: str,
                                          only_failed: bool) -> str:
     """
@@ -610,6 +618,7 @@ def active_assurance_list_monitors_sync(org_id: str, action: str, id: str, name:
     return monitors
 
 
+@validate_org_id
 def list_monitors(org_id: str, id: str = None, name: str = None) -> str:
     """
     Get information about a single monitor or multiple Monitors. Either `id` or `name` has to be specified.
@@ -651,6 +660,7 @@ def list_monitors(org_id: str, id: str = None, name: str = None) -> str:
     return json.dumps(monitors)
 
 
+@validate_org_id
 def list_worst_monitors(org_id) -> str:
     """Get a list of upto 5 Monitors with the most major or critical Alerts.
 
@@ -691,6 +701,7 @@ def list_worst_monitors(org_id) -> str:
     return json.dumps(monitors)
 
 
+@validate_org_id
 def list_recent_monitors(org_id, only_failed: bool = False) -> str:
     """
     Get a list of upto 5 most recent Monitors.
@@ -727,6 +738,7 @@ def list_recent_monitors(org_id, only_failed: bool = False) -> str:
 ########## Test ##########
 
 
+@validate_org_id
 def format_test(org_id, test):
     exec_id = test['id']
     test_id = test['test']['id']
@@ -743,6 +755,7 @@ def format_test(org_id, test):
     }
 
 
+@validate_org_id
 def active_assurance_list_tests_sync(org_id: str, action: str, id: str, name: str,
                                       only_failed: bool) -> str:
     """
@@ -775,6 +788,7 @@ def active_assurance_list_tests_sync(org_id: str, action: str, id: str, name: st
     return tests
 
 
+@validate_org_id
 def list_tests(org_id: str, id: str = None, name: str = None) -> str:
     """
     Get information about a single test or multiple Tests. Either `id` or `name` has to be specified.
@@ -816,6 +830,7 @@ def list_tests(org_id: str, id: str = None, name: str = None) -> str:
     return json.dumps(tests)
 
 
+@validate_org_id
 def list_worst_tests(org_id) -> str:
     """
     Get a list of upto 5 Tests with the most major or critical Alerts.
@@ -857,6 +872,7 @@ def list_worst_tests(org_id) -> str:
     return json.dumps(tests)
 
 
+@validate_org_id
 def list_recent_tests(org_id: str, only_failed: bool = False) -> str:
     """
     Get a list of upto 5 most recent Tests.
@@ -922,6 +938,7 @@ def format_plugin(plugin, brief=False):
     }
 
 
+@validate_org_id
 def active_assurance_list_plugin_schema_sync(org_id: str, plugin_name: str, brief: bool) -> str:
     """
     Get details of single plugin schema or for all plugin schemas if no plugin name specified.
@@ -969,6 +986,7 @@ def active_assurance_list_plugin_schema_sync(org_id: str, plugin_name: str, brie
 ########## Measurements ##########
 
 
+@validate_org_id
 def format_metrics(org_id: str, metrics_from_measurement, metric_name: str,
                    start_time: str = None, end_time: str = None, aggregation_action: str = None,
                    caches: dict[str:any] = None):
@@ -1032,6 +1050,7 @@ def format_metrics(org_id: str, metrics_from_measurement, metric_name: str,
     return res
 
 
+@validate_org_id
 def list_streams_for_test_or_monitor(org_id: str, type: str, id: str, plugin_name: str):
     """
     List all the streams for a test or monitor.
@@ -1068,6 +1087,7 @@ def list_streams_for_test_or_monitor(org_id: str, type: str, id: str, plugin_nam
     return res
 
 
+@validate_org_id
 def get_aggregated_metrics(org_id: str,
                            measurements,
                            start_time: str,
@@ -1112,6 +1132,7 @@ def get_aggregated_metrics(org_id: str,
     return res
 
 
+@validate_org_id
 def list_measurements(org_id: str, plugin_name: str, test_agent_id: str, measurement_type: str = None,
                       caches: dict[str:any] = None) -> dict[str, any]:
     """
@@ -1163,6 +1184,7 @@ def list_measurements(org_id: str, plugin_name: str, test_agent_id: str, measure
     return measurements
 
 
+@validate_org_id
 def format_measurement(org_id, measurement_info, caches: dict[str:any] = None):
     """
     Get a map of single measurement details.
@@ -1256,6 +1278,7 @@ def format_measurement(org_id, measurement_info, caches: dict[str:any] = None):
     return res
 
 
+@validate_org_id
 def active_assurance_list_measurements_with_metrics_sync(org_id: str,
                                                          metric_name: str,
                                                          plugin_name: str,

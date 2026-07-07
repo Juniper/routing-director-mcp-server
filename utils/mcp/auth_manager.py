@@ -2,6 +2,7 @@ import json
 import os
 import secrets
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Dict, Any, Optional
 import logging
 
@@ -10,10 +11,17 @@ from fastmcp.server.auth import TokenVerifier, AccessToken
 
 logger = logging.getLogger(__name__)
 
+# Resolve the project root from this file's location (ask-paragon/utils/mcp/auth_manager.py)
+# so the tokens file location is deterministic and independent of the current working
+# directory from which the CLI or server is launched.
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+DEFAULT_TOKENS_FILE = str(PROJECT_ROOT / ".tokens")
+
 
 class TokenManager:
-    def __init__(self, tokens_file: str = ".tokens"):
-        self.tokens_file = tokens_file
+    def __init__(self, tokens_file: str = DEFAULT_TOKENS_FILE):
+        # Always resolve to an absolute path so behavior never depends on the cwd.
+        self.tokens_file = os.path.abspath(tokens_file)
 
     def _load_tokens(self) -> Dict[str, Any]:
         """Load tokens from file, return empty dict if file doesn't exist"""

@@ -4,16 +4,20 @@ from setuptools import find_packages, setup
 from setuptools.command.sdist import sdist
 import shutil
 
+# Individual source files to ship. Use this (instead of adding a whole package
+# to `packages` below) when a directory mixes MCP code with LLM-connector code
+# that must NOT leak into the MCP package. We cherry-pick only the specific
+# modules the MCP server actually needs.
 files_copy = {
     "RoutingDirectorMCP.py": "RoutingDirectorMCP.py",
     "utils/lm_calls/paragon/constants.py": "utils/lm_calls/paragon/constants.py",
-    "requirements.txt": "requirements.txt",
-    "setup.py": "setup.py",
-    "README.md": "README.md",
-    "jrd-2.8.0-mcp-spec.json": "jrd-2.8.0-mcp-spec.json",
+    "utils/lm_calls/agent_directives.py": "utils/lm_calls/agent_directives.py",
+    "mcp_setup/requirements.txt": "requirements.txt",
+    "mcp_setup/setup.py": "setup.py",
+    "mcp_setup/README.md": "README.md",
 }
 
-version = "v2.8.0"
+version = os.getenv("MCP_PACKAGE_VERSION", "0.1.0")
 
 class CustomBuildCommand(sdist):
     def run(self):

@@ -25,7 +25,7 @@ def setup_token_subparsers(parser, required=True):
 
 def handle_token_command(args):
 
-    manager = TokenManager("../../.tokens")
+    manager = TokenManager()
 
     if args.command == 'generate':
         handle_generate_command(manager, args.client_id, args.description)

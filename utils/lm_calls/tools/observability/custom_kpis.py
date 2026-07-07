@@ -1,13 +1,17 @@
 import os
 import json
 import logging
-from datetime import datetime, timedelta, UTC
+# Use timezone.utc (available since Python 3.2) rather than datetime.UTC,
+# which only exists on Python 3.11+. The MCP package must import on 3.10 too.
+from datetime import datetime, timedelta, timezone
 from typing import List
-
+from utils.lm_calls.tools.helper import validate_org_id
 from utils.lm_calls.paragon.constants import (PAPI_URL, con, USE_EXTERNAL_API)
 
 logger = logging.getLogger(__name__)
 
+
+@validate_org_id
 def get_custom_kpi_instantiations(org_id: str, pageNumber: int =1, limit: int =50) -> str:
     """
     Retrieves the list of custom KPI instantiations from the Routing Director.
@@ -26,6 +30,8 @@ def get_custom_kpi_instantiations(org_id: str, pageNumber: int =1, limit: int =5
     resp = con.request(method="GET", url=f"/insights/api/v1/orgs/{org_id}/instances/summary", params=params)
     return json.dumps(resp.json(), indent=2) + ". Resolve the device mac addresses to name"
 
+
+@validate_org_id
 def get_observability_kpis(org_id: str, mac: str) -> str:
     """
     Retrieves the list of KPIs from the Routing Director.
@@ -40,7 +46,7 @@ def get_observability_kpis(org_id: str, mac: str) -> str:
     mac = mac.replace(":", "").replace("-", "")
     if not org_id:
         return "Please specifiy the organization for which you want to retrieve the KPIs"
-    present_time = datetime.now(UTC)
+    present_time = datetime.now(timezone.utc)
     end_time =  present_time.strftime("%Y-%m-%dT%H:%M:%SZ")
     start_time = (present_time - timedelta(minutes=30)).strftime("%Y-%m-%dT%H:%M:%SZ")
     body = [
@@ -90,6 +96,8 @@ def get_observability_kpis(org_id: str, mac: str) -> str:
         )
     return json.dumps(kpis, indent=2)
 
+
+@validate_org_id
 def get_observability_kpi_data(org_id: str, mac: str, topic: str, rule: str, field: str, label_filters: List[str]) -> str:
     """
     Retrieves the KPI data from the Routing Director.
@@ -108,7 +116,7 @@ def get_observability_kpi_data(org_id: str, mac: str, topic: str, rule: str, fie
     mac = mac.replace(":", "").replace("-", "")
     if not org_id:
         return "Please specifiy the organization for which you want to retrieve the KPIs"
-    present_time = datetime.now(UTC)
+    present_time = datetime.now(timezone.utc)
     end_time =  present_time.strftime("%Y-%m-%dT%H:%M:%SZ")
     start_time = (present_time - timedelta(minutes=30)).strftime("%Y-%m-%dT%H:%M:%SZ")
     where = f"time>='{start_time}' and time<='{end_time}'"

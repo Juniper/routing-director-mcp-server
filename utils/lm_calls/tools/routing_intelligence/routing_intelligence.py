@@ -97,7 +97,9 @@ Response field reference (field names mirror the YANG path keys returned by the 
 
 import json
 import logging
+import urllib.parse
 
+from utils.lm_calls.tools.helper import get_mac_uuid, validate_org_id
 from utils.lm_calls.paragon.constants import con, X_FROM
 
 logger = logging.getLogger(__name__)
@@ -115,9 +117,18 @@ def _jri_get(path: str, params: dict) -> str:
     """Issue a GET request to the api-server JRI endpoint and return JSON string.
     The path should be relative (e.g. /routingbot/api/v1/orgs/{org_id}/jri/...);
     con will prepend the Routing Director base URL from the config.
+
+    Query parameters are serialised with urllib.parse.urlencode using safe='*' so
+    that wildcard values ('*') are transmitted as literal '*' rather than '%2A'.
+    The routingbot API only recognises the unencoded '*' as a wildcard.
     """
     try:
-        resp = con.request(method="GET", url=path, params=params, headers=_DEFAULT_HEADERS)
+        query_string = urllib.parse.urlencode(
+            {k: v for k, v in params.items()},
+            quote_via=lambda s, safe, encoding, errors: urllib.parse.quote(str(s), safe='*'),
+        )
+        url_with_qs = f"{path}?{query_string}"
+        resp = con.request(method="GET", url=url_with_qs, headers=_DEFAULT_HEADERS)
         resp.raise_for_status()
         return resp.text
     except Exception as exc:
@@ -129,6 +140,8 @@ def _jri_get(path: str, params: dict) -> str:
 # Public tool functions
 # ---------------------------------------------------------------------------
 
+
+@validate_org_id
 def get_jri_forwarding_exceptions(
     org_id: str,
     start_time: int,
@@ -176,6 +189,8 @@ def get_jri_forwarding_exceptions(
     """
     if not org_id:
         return json.dumps({"error": "org_id is required"})
+    if device_id and device_id != "*":
+        device_id = get_mac_uuid(device_id)
     logger.info(
         f"get_jri_forwarding_exceptions org={org_id} start={start_time} end={end_time} "
         f"device_id={device_id} exception_code={exception_code} ether_type={ether_type} "
@@ -196,6 +211,7 @@ def get_jri_forwarding_exceptions(
     return _jri_get(path, params)
 
 
+@validate_org_id
 def get_jri_os_exceptions(
     org_id: str,
     start_time: int,
@@ -246,6 +262,8 @@ def get_jri_os_exceptions(
     """
     if not org_id:
         return json.dumps({"error": "org_id is required"})
+    if device_id and device_id != "*":
+        device_id = get_mac_uuid(device_id)
     logger.info(
         f"get_jri_os_exceptions org={org_id} start={start_time} end={end_time} "
         f"device_id={device_id} exception_code={exception_code} flow_information={flow_information}"
@@ -263,6 +281,7 @@ def get_jri_os_exceptions(
     return _jri_get(path, params)
 
 
+@validate_org_id
 def get_jri_routing_exceptions(
     org_id: str,
     start_time: int,
@@ -309,6 +328,8 @@ def get_jri_routing_exceptions(
     """
     if not org_id:
         return json.dumps({"error": "org_id is required"})
+    if device_id and device_id != "*":
+        device_id = get_mac_uuid(device_id)
     logger.info(
         f"get_jri_routing_exceptions org={org_id} start={start_time} end={end_time} "
         f"device_id={device_id} exception_code={exception_code} flow_information={flow_information}"
