@@ -3,8 +3,10 @@ import re
 import json
 import requests
 
+from utils.lm_calls.agent_directives import attach_directives, directives_response
 from utils.lm_calls.paragon.constants import con, X_FROM, FH_ORDER_MGMT, USE_EXTERNAL_API, INSIGHTS_API_SERVER
 from utils.lm_calls.tools.constants import uuid_regex
+from utils.lm_calls.tools.helper import validate_org_id
 
 import logging
 logger = logging.getLogger(__name__)
@@ -18,6 +20,8 @@ vpn_types = {
     "eline-evpn-vpws-csm": "eline-evpn-vpws-csm"
 }
 
+
+@validate_org_id
 def get_customers(org_id:str) -> str:
     """
     Fetch all customers
@@ -42,6 +46,7 @@ def get_customers(org_id:str) -> str:
 # TODO: sites: List[str] filter is not supported by FH yet. Raised below ticket to support this.
 #  Until then, parameter is removed from the function signature.
 # https://paragon-automation.atlassian.net/browse/FH-6550
+@validate_org_id
 def list_available_vpns(
         org_id: str, customer_uuid: str, vpn_name: str, vpn_uuid: str, vpn_type: str, offset: int) -> str:
     """
@@ -133,11 +138,11 @@ def list_available_vpns(
         resp["filtered_count"] = len(resp["vpn_list"])
         if total_count:
             resp["total_vpns"] = total_count
-        resp["instructions"] = f"""Follow below instructions:
+        attach_directives(resp, f"""Follow below instructions:
         1) If this response has some VPN's, but does not have the VPN you are looking for, or does not have full list of VPN's, then call list_available_vpns with offset {offset + 1} to get the next set of VPNs.
         2) Give total VPNs from total_count in the summary
         3) If not mentioned by the user, display the VPN results in tabular format
-        4) Make sure most of the basic information is displayed"""
+        4) Make sure most of the basic information is displayed""")
         return json.dumps(resp)
     except requests.exceptions.RequestException as e:
         logger.error(f"Error fetching metadata from {endpoint}: {e}")
@@ -156,8 +161,10 @@ def get_vpn_health() -> str:
     4) Revolve device mac addresses to device names using get_device_list from papi_agent
     Above steps needs to be executed to get VPN health.
     """
-    return h
+    return directives_response(h)
 
+
+@validate_org_id
 def get_vpn_metrics(org_id: str, vpn_uuid: str) -> str:
     """
     Fetch VPN metrics or details.
@@ -200,7 +207,6 @@ def get_vpn_metrics(org_id: str, vpn_uuid: str) -> str:
     url = f'{INSIGHTS_API_SERVER}api/v2/orgs/{org_id}/service_instances/{vpn_uuid}/metrics'
     final_response = {
         "response": {},
-        "instructions": "While providing answer to the user, resolve all the 'device_id' to device names using get_device_list tool from papi_agent"
     }
     for domain in type_to_domain.get(vpn_type, []):
         params = {
@@ -217,4 +223,5 @@ def get_vpn_metrics(org_id: str, vpn_uuid: str) -> str:
             if service_keys:
                 final_response[domain] = res.get("service_instance")[service_keys[0]]
     logger.debug(final_response)
+    attach_directives(final_response, "While providing answer to the user, resolve all the 'device_id' to device names using get_device_list tool from papi_agent")
     return json.dumps(final_response)

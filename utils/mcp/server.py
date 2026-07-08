@@ -1,13 +1,14 @@
 import json
 import os
+import asyncio
 import logging
-import pathlib
 from typing import Optional
+
 from fastmcp import FastMCP
 
 from utils.mcp.auth_manager import TokenManager
-from utils.mcp.utils import update_openapi_specs_with_tags
-from utils.mcp.constants import SERVER_NAME, DEFAULT_OPEN_API_SPEC
+from utils.mcp.utils import update_openapi_specs_with_tags, get_include_tags, fetch_openapi_spec_from_url, validate_mcp_config_file
+from utils.mcp.constants import SERVER_NAME
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -15,31 +16,6 @@ logger = logging.getLogger(__name__)
 
 mcp: Optional[FastMCP] = None
 mcp_config: str = ""
-
-
-def validate_mcp_config_file(config):
-    mandatory_keys_keys = ['http_url', 'org_id', 'auth']
-    optional_config_keys = ['openapi_spec', 'components']
-    for key in mandatory_keys_keys:
-        if key not in config:
-            raise ValueError(f"Mandatory key `{key}` is missing in the MCP config file")
-
-    valid_keys = [key for key in (mandatory_keys_keys + optional_config_keys) if key in config]
-    logger.info("MCP config file validation successful. Configs used: %s", valid_keys)
-
-    # validating the auth section in the config file
-    auth_config = config.get('auth', {})
-    auth_type = auth_config.get('type')
-    if auth_type == 'basic':
-        if auth_config.get('username', None) is None or auth_config.get('password', None) is None:
-            raise ValueError("Routing Director's GUI's username and password must be provided for basic authentication in the MCP config file.")
-    elif auth_type == 'token':
-        if auth_config['token'] is None:
-            raise ValueError("Routing Director's API Token must be provided for token authentication in the MCP config file.")
-    else:
-        raise ValueError(f"Invalid auth type `{auth_type}` in the MCP config file. Supported types are `token` and `basic`.")
-
-    return True
 
 
 def load_config(config_path: str) -> dict:
@@ -77,6 +53,10 @@ def create_mcp_server(args):
     os.environ['EOP_HOST'] = config.get('http_url')
     os.environ['MCP_CONFIG'] = mcp_config
 
+    # Initialize a process-wide *sync* Routing Director client and store it in the request context.
+    from utils.lm_calls.connection.client_connection import SyncHttpxClient, set_con
+    set_con(SyncHttpxClient(config_path=mcp_config))
+
     token_manager = TokenManager()
 
     verifier = None
@@ -92,27 +72,22 @@ def create_mcp_server(args):
 
     openapi_spec_path = config.get('openapi_spec')
 
-    spec = None
     if openapi_spec_path:
-        logger.info("User provided OpenAPI spec found at %s. Loading it for MCP server.", openapi_spec_path)
         with open(openapi_spec_path) as fh:
             spec = json.load(fh)
     else:
-        try:
-            default_openapi_spec_full_path = str(pathlib.Path(__file__).parent.parent.parent / DEFAULT_OPEN_API_SPEC)
-            if os.path.exists(default_openapi_spec_full_path):
-                logger.info(f"Loading default OpenAPI spec from {default_openapi_spec_full_path}")
-                with open(default_openapi_spec_full_path) as fh:
-                    spec = json.load(fh)
-        except Exception as e:
-            logger.error(f"Failed to load default OpenAPI spec: {e}")
+        spec = fetch_openapi_spec_from_url(config.get('http_url'))
 
-    if spec:
+    if not spec:
+         mcp = FastMCP(name=SERVER_NAME, log_level="DEBUG", auth=verifier)
+    else:
         components = config.get('components', [])
+        include_tags = get_include_tags(components)
+
         # If user provides a valid component list in the config.json, filtering the openapi spec for the specified
         # components, else filtering the openapi spec with the default component list . Only the endpoints with the
         # openapi extension `x-mcp-server` will be included for  mcp, not all the endpoints in the openapi spec.
-        updated_spec, include_tags = update_openapi_specs_with_tags(openapi_spec=spec, components=components)
+        updated_spec = update_openapi_specs_with_tags(openapi_spec=spec, components=components)
 
         from utils.lm_calls.connection.client_connection import create_routing_director_async_client
         # The tool calls generated from the openapi spec doesn't work with sync httpx client, so using
@@ -120,21 +95,24 @@ def create_mcp_server(args):
         # used for the tool calls, the mcp server itself will run in sync mode.
         async_con = create_routing_director_async_client()
 
+        # Validate the configured Routing Director credentials before starting the
+        # server. If authentication fails (e.g. incorrect UI credentials in the
+        # config file), abort startup instead of bringing up a server that cannot
+        # service any tool calls.
+        if async_con is not None:
+            authenticated = asyncio.run(async_con.verify_authentication())
+            if not authenticated:
+                raise RuntimeError(
+                    "Authentication with Routing Director failed. Please verify the "
+                    "credentials in the config file. MCP server will not start."
+                )
+
         mcp = FastMCP.from_openapi(name=SERVER_NAME, openapi_spec=updated_spec,
-                                   client= async_con, auth=verifier, include_tags=include_tags)
-    else:
-        logger.info("OpenAPI spec not available. Starting MCP server without it, some of the functionality might be unavailable.")
-        mcp = FastMCP(name=SERVER_NAME, log_level="DEBUG", auth=verifier)
+                                   client=async_con, auth=verifier, include_tags=include_tags)
 
     _load_mcp_plugins()
-    mcp.prompt(f"Organization ID or org id is {config.get('org_id')}")
-
-    # List all registered tools before starting the server
-    try:
-        tools = mcp._tool_manager._tools
-        logger.info("Total registered MCP tools %d: %s", len(tools), sorted(tools.keys()))
-    except Exception as e:
-        logger.warning("Could not list registered tools: %s", e)
+    if config.get("org_id", None) is not None:
+        mcp.prompt(f"Organization ID or org id is {config.get('org_id')}")
 
     # Prepare SSL config if provided
     uvicorn_config = None

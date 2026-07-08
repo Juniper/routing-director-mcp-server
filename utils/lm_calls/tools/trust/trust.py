@@ -7,7 +7,8 @@ import base64
 import requests
 from typing import Optional, List, Dict, Any
 import urllib.parse
-
+from utils.lm_calls.agent_directives import attach_directives
+from utils.lm_calls.tools.helper import validate_org_id
 from utils.lm_calls.paragon.constants import (TRUST_URL, con, USE_EXTERNAL_API,  X_FROM)
 
 logger = logging.getLogger(__name__)
@@ -46,6 +47,8 @@ def _trust_request(
         return _handle_trust_error(f"Trust request failed: {method} {path}", exp)
     return res.json()
 
+
+@validate_org_id
 def get_trust_devices(org_id:str, device_name: Optional[str] = None, device_ems_uuid: Optional[str] = None) -> dict:
     """
     Retrieve trust devices. For all compliance related tests targetIDs needs to be retrieved from trust devices.
@@ -68,6 +71,8 @@ def get_trust_devices(org_id:str, device_name: Optional[str] = None, device_ems_
 
     return _trust_request(org_id=org_id, method="GET", path="/devices", params=params)
 
+
+@validate_org_id
 def list_compliance_scans(
         org_id: str,
         scan_name: Optional[str] = None,
@@ -86,6 +91,8 @@ def list_compliance_scans(
 
     return _trust_request(org_id=org_id, method="GET", path="/compliance/scans", params=params)
 
+
+@validate_org_id
 def get_compliance_scan_details(
         org_id: str,
         scan_id: str) -> dict:
@@ -98,13 +105,15 @@ def get_compliance_scan_details(
     """
     details =  _trust_request(org_id=org_id, method="GET", path=f"/compliance/scans/{scan_id}")
     if "error" not in details and "context" not in details:
-        details["instructions"] = """If details of a particular scan is requested, then give detailed summary.
+        attach_directives(details, """If details of a particular scan is requested, then give detailed summary.
         1) Retrieve "results" from the scan
         2) There can be multiple objects in results. For each result object get resultDocId. Call get_compliance_doc with that ID to retrieve the detailed scan results
         3) Based on the data summarize the compliance status of the devices
-        """
+        """)
     return details
 
+
+@validate_org_id
 def list_compliance_scan_benchmark_docs(
         org_id: str,
         name: Optional[str] = None,
@@ -126,6 +135,8 @@ def list_compliance_scan_benchmark_docs(
 
     return _trust_request(org_id=org_id, method="GET", path=f"/compliance/documents/search", params=params)
 
+
+@validate_org_id
 def get_compliance_doc(
         org_id: str,
         document_id: str) -> dict:
@@ -150,6 +161,8 @@ def get_compliance_doc(
             details["document"]["document"] = str(base64.b64decode(document_data))
     return details
 
+
+@validate_org_id
 def create_compliance_scan(
         org_id: str,
         scan_name: str,
