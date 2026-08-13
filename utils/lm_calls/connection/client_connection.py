@@ -51,14 +51,13 @@ def use_con(con):
         yield con
     finally:
         _con_context.reset(token)
-        if getattr(con, "shared", False):
-            return
-        close = getattr(con, "close", None)
-        if callable(close):
-            try:
-                close()
-            except Exception as ex:  # pragma: no cover - best-effort cleanup
-                logger.warning("Error closing Routing Director client: %s", ex)
+        if not getattr(con, "shared", False):
+            close = getattr(con, "close", None)
+            if callable(close):
+                try:
+                    close()
+                except Exception as ex:  # pragma: no cover - best-effort cleanup
+                    logger.warning("Error closing Routing Director client: %s", ex)
 
 
 class BaseClient:
@@ -113,7 +112,7 @@ class HttpxClient:
     def _load_config(self, config_path):
         with open(config_path) as f:
             config = json.load(f)
-        self.base_url = config["http_url"]
+        self.base_url = config["http_url"].rstrip("/")
         self.auth_type = config["auth"]["type"]
 
         if self.auth_type == "basic":
@@ -187,7 +186,10 @@ class HttpxClient:
         if kwargs.get("headers") is None:
             kwargs["headers"] = {}
         kwargs["headers"].update(extra_headers)
-        kwargs["url"] = self.base_url + kwargs["url"]
+        # Join with a single slash; skip already-absolute URLs.
+        url = kwargs["url"]
+        if isinstance(url, str) and not url.startswith(("http://", "https://")):
+            kwargs["url"] = f"{self.base_url}/{url.lstrip('/')}"
         return kwargs
 
 
@@ -319,6 +321,19 @@ class AsyncHttpxClient(HttpxClient):
         self.session = None
         self._initialized = True
 
+    @property
+    def headers(self):
+        """Default headers, mirroring the ``httpx.AsyncClient`` interface.
+
+        fastmcp's OpenAPI integration (``OpenAPITool.run``) reads ``client.headers``
+        on the injected client. Per-request auth headers/cookies are already applied
+        in ``_build_request``, so this surfaces the underlying session's headers when
+        a session exists and an empty mapping otherwise.
+        """
+        if self.session is not None:
+            return self.session.headers
+        return httpx.Headers()
+
     async def __aenter__(self):
         if self.session is None:
             self.session = httpx.AsyncClient(base_url=self.base_url, timeout=60.0, verify=False)
@@ -418,7 +433,7 @@ class AsyncHttpxClient(HttpxClient):
 def create_routing_director_client(org_id):
     config_path = os.getenv("MCP_CONFIG", "NO_CONFIG")
     if USE_EXTERNAL_API:
-        # Used by mcp custom tools 
+        # Used by mcp custom tools
         return SyncHttpxClient(config_path=config_path)
     return InternalSyncClient(org_id=org_id)
 

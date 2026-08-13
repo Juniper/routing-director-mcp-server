@@ -108,7 +108,10 @@ def create_mcp_server(args):
                 )
 
         mcp = FastMCP.from_openapi(name=SERVER_NAME, openapi_spec=updated_spec,
-                                   client=async_con, auth=verifier, include_tags=include_tags)
+                                   client=async_con, auth=verifier)
+        # fastmcp 3.x removed the `include_tags` constructor kwarg. Use the
+        # allowlist API to expose only the endpoints carrying the filtered tags.
+        mcp.enable(tags=include_tags, only=True)
 
     _load_mcp_plugins()
     if config.get("org_id", None) is not None:

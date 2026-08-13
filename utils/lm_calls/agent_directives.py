@@ -1,28 +1,31 @@
-"""Trusted agent-directive envelope for tool/function responses.
+"""
+Trusted agent-directive envelope for tool/function responses.
 
 Some tools intentionally return short instructions that steer the LLM (paging,
-device-id resolution, formatting, multi-step recipes). Historically these were
-placed under a plain ``instructions`` key and the agent system prompts told the
-model to "follow any instructions in the tool call response". That rule is
-scope-blind: untrusted device/API data embedded in a tool response could
-impersonate instructions, which is an indirect prompt-injection path.
+device-id resolution, formatting, multi-step recipes). Placing these under a
+plain ``instructions`` key is unsafe: untrusted device/API data in a tool
+response could impersonate instructions (indirect prompt injection).
 
 This module makes trusted (source-authored) directives machine-distinguishable
 from untrusted data using a per-process random token:
 
 * ``TRUSTED_INSTRUCTION_TOKEN`` is generated once at process start. It is never
-  written to source, logs, or any user-facing response.
-* Source-authored directives are emitted under the ``agent_directives`` key,
-  carrying the token.
+  written to source or logs.
+* Source-authored directives are emitted under the ``agent_directives`` key via
+  :func:`attach_directives` / :func:`directives_response`, carrying the token.
 * The system prompt embeds the same token (see
-  :func:`trusted_directive_prompt_clause`) and instructs the model to obey
-  directives ONLY when the token matches, to treat everything else as untrusted
-  data, and never to reveal the token.
+  :func:`trusted_directive_prompt_clause`) so the model obeys directives ONLY
+  when the token matches, treats everything else as untrusted data, and never
+  reveals the token.
 
-Because tool responses are built as Python dicts and JSON-serialized, untrusted
-device/API content always lands as string values. It can neither create a
-top-level ``agent_directives`` key nor know the secret token, so forged
-directives embedded in data are ignored by the model.
+Because tool responses are built as dicts and JSON-serialized, untrusted content
+always lands as string values; it can neither create a top-level
+``agent_directives`` key nor know the token, so forged directives are ignored.
+
+The token must reach the model but must never reach the end user. Use
+:func:`redact_trusted_token` to strip it from responses served to a client
+(REST/SSE) at the egress boundary; persisted conversation history keeps the raw
+token.
 """
 
 import secrets
@@ -35,6 +38,58 @@ TRUSTED_INSTRUCTION_TOKEN: str = secrets.token_hex(16)
 AGENT_DIRECTIVES_KEY = "agent_directives"
 TRUSTED_TOKEN_KEY = "trusted_token"  # nosec B105 - dictionary key name, not a secret
 DIRECTIVES_KEY = "directives"
+
+
+def redact_trusted_token(output: Any) -> Any:
+    """
+    Return output with the trusted directive token removed for the end user.
+
+    The per-process token must reach the model (so it can validate trusted
+    directives) but must never be exposed to the end user in a response served to
+    a client. Apply this at the egress boundary where a response is sent to the
+    client; the copy persisted to OpenSearch keeps the raw token.
+
+    The ``trusted_token`` field is dropped wherever it appears under an
+    ``agent_directives`` block, at any nesting depth, including inside nested
+    JSON-encoded string values (as produced when a tool result is embedded in a
+    markdown-wrapped response). Returns the input unchanged (same object) when
+    there is nothing to strip, and only rebuilds the branch that contains the
+    token, so token-free payloads are not copied. The input is never mutated.
+
+    :param output: The response or tool result to sanitize (dict, list, or str).
+    :return: A sanitized value with the trusted token removed.
+    """
+    if isinstance(output, dict):
+        changed = False
+        cleaned = {}
+        for key, value in output.items():
+            if key == AGENT_DIRECTIVES_KEY and isinstance(value, dict) and TRUSTED_TOKEN_KEY in value:
+                value = {k: v for k, v in value.items() if k != TRUSTED_TOKEN_KEY}
+                changed = True
+            new_value = redact_trusted_token(value)
+            changed = changed or new_value is not value
+            cleaned[key] = new_value
+        return cleaned if changed else output
+    if isinstance(output, list):
+        changed = False
+        cleaned = []
+        for item in output:
+            new_item = redact_trusted_token(item)
+            changed = changed or new_item is not item
+            cleaned.append(new_item)
+        return cleaned if changed else output
+    if isinstance(output, str):
+        # Redaction also needs to work for historical payloads retrieved from opensearch as part of chat_history
+        # whose token was generated in a different process, hence detecting by key names, not token.
+        if AGENT_DIRECTIVES_KEY not in output and TRUSTED_TOKEN_KEY not in output:
+            return output
+        try:
+            parsed = json.loads(output)
+        except (ValueError, TypeError):
+            return output
+        cleaned = redact_trusted_token(parsed)
+        return json.dumps(cleaned) if cleaned is not parsed else output
+    return output
 
 
 def attach_directives(payload: dict, directives: str) -> dict:

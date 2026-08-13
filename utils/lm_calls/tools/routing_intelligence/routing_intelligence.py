@@ -99,8 +99,8 @@ import json
 import logging
 import urllib.parse
 
-from utils.lm_calls.tools.helper import get_mac_uuid, validate_org_id
 from utils.lm_calls.paragon.constants import con, X_FROM
+from utils.lm_calls.tools.helper import validate_org_id
 
 logger = logging.getLogger(__name__)
 
@@ -178,7 +178,7 @@ def get_jri_forwarding_exceptions(
     :param org_id: Organisation UUID (mandatory).
     :param start_time: Start of the query window as a Unix timestamp in seconds (mandatory).
     :param end_time: End of the query window as a Unix timestamp in seconds (mandatory).
-    :param device_id: Comma-separated device IDs/MACs to filter by, or "*" for all (default "*").
+    :param device_id: Comma-separated device UUIDs to filter by, or "*" for all (default "*"). Use get_devices_sync to retrieve UUIDs.
     :param exception_code: Comma-separated exception codes to filter by, or "*" for all (default "*").
     :param ether_type: Packet type filter – "IPv4", "IPv6", "MPLS", or "*" for all (default "*").
     :param flow_information: When True, include per-flow packet descriptor fields (default False).
@@ -189,8 +189,6 @@ def get_jri_forwarding_exceptions(
     """
     if not org_id:
         return json.dumps({"error": "org_id is required"})
-    if device_id and device_id != "*":
-        device_id = get_mac_uuid(device_id)
     logger.info(
         f"get_jri_forwarding_exceptions org={org_id} start={start_time} end={end_time} "
         f"device_id={device_id} exception_code={exception_code} ether_type={ether_type} "
@@ -253,7 +251,7 @@ def get_jri_os_exceptions(
     :param org_id: Organisation UUID (mandatory).
     :param start_time: Start of the query window as a Unix timestamp in seconds (mandatory).
     :param end_time: End of the query window as a Unix timestamp in seconds (mandatory).
-    :param device_id: Comma-separated device IDs/MACs to filter by, or "*" for all (default "*").
+    :param device_id: Comma-separated device UUIDs to filter by, or "*" for all (default "*"). Use get_devices_sync to retrieve UUIDs.
     :param exception_code: Comma-separated exception codes to filter by, or "*" for all (default "*").
     :param flow_information: When True, include OS socket and counter detail fields (default False).
     :param page_no: Page number for pagination (default 1).
@@ -262,8 +260,6 @@ def get_jri_os_exceptions(
     """
     if not org_id:
         return json.dumps({"error": "org_id is required"})
-    if device_id and device_id != "*":
-        device_id = get_mac_uuid(device_id)
     logger.info(
         f"get_jri_os_exceptions org={org_id} start={start_time} end={end_time} "
         f"device_id={device_id} exception_code={exception_code} flow_information={flow_information}"
@@ -319,7 +315,7 @@ def get_jri_routing_exceptions(
     :param org_id: Organisation UUID (mandatory).
     :param start_time: Start of the query window as a Unix timestamp in seconds (mandatory).
     :param end_time: End of the query window as a Unix timestamp in seconds (mandatory).
-    :param device_id: Comma-separated device IDs/MACs to filter by, or "*" for all (default "*").
+    :param device_id: Comma-separated device UUIDs to filter by, or "*" for all (default "*"). Use get_devices_sync to retrieve UUIDs.
     :param exception_code: Comma-separated exception codes to filter by, or "*" for all (default "*").
     :param flow_information: When True, include KRT download-path descriptor fields (default False).
     :param page_no: Page number for pagination (default 1).
@@ -328,8 +324,6 @@ def get_jri_routing_exceptions(
     """
     if not org_id:
         return json.dumps({"error": "org_id is required"})
-    if device_id and device_id != "*":
-        device_id = get_mac_uuid(device_id)
     logger.info(
         f"get_jri_routing_exceptions org={org_id} start={start_time} end={end_time} "
         f"device_id={device_id} exception_code={exception_code} flow_information={flow_information}"

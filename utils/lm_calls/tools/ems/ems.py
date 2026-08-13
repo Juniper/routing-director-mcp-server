@@ -16,7 +16,7 @@ from utils.lm_calls.paragon.constants import (PAPI_URL, con, USE_EXTERNAL_API, A
 from utils.lm_calls.tools.constants import uuid_regex
 from utils.lm_calls.tools.ems.config_template import ConfigTemplate
 from utils.lm_calls.tools.fh import list_available_vpns
-from utils.lm_calls.tools.helper import validate_device_mac, get_mac_uuid, validate_org_id
+from utils.lm_calls.tools.helper import validate_device_uuid, validate_org_id
 
 # Regex to find Junos pipe commands (match, except, find) with unquoted patterns containing |
 _junos_pipe_pattern_regex = re.compile(
@@ -209,30 +209,30 @@ def get_site_list(org_id:str, name: str = "", limit: int = 50) -> dict|str :
 
 
 @validate_org_id
-def get_devices_sync(org_id: str, vendor: str, host: str, model:str, site_id:str, mac:str) -> str:
+def get_devices_sync(org_id: str, vendor: str="", host: str="", model:str="", site_id:str="", device_uuid:str="",  limit:int = 50, offset:int = 0) -> str:
     """
-    Retrieves the list of devices from the Routing Director. You can also fetch the device details like alert, mac-address, connected/disconnected, device model type. 
+    Retrieves the list of devices from the Routing Director. You can also fetch the device details like alert, device_uuid, connected/disconnected, device model type.
     Filter devices using one or a combination of optional parameters.
+    Return only 50 devices unless the user specifically requests for more device details.
 
     :param org_id: The organization ID. compulsory parameter.
     :param vendor: Filter by device vendor, possible values are "Juniper Networks", "Cisco", "Nokia". Optional Parameter.
     :param host: DNS host name or IP of the device. Optional parameter.
     :param model: Filter by device model (e.g., "MX960"). Optional parameter.
     :param site_id: Filter by site ID (e.g., "f2199f26-60cc-4ebc-a73b-dd93a1920d3c"). Optional parameter.
-    :param mac: Filter by mac (e.g., "2c6bf5660700"). Optional parameter.
+    :param limit: Maximum number of devices to return. Optional parameter, defaults to 50, do not change this value unless the user specifically requests for more device details.
+    :param offset: Number of devices to skip before starting to return results, used for pagination. Optional parameter, defaults to 0. For example, to fetch the second page of 50 devices, set offset to 50.
+    :param device_uuid: Filter by device UUID (e.g., "f47ac10b-58cc-4372-a567-0e02b2c3d479"). Optional parameter.
     :return: JSON string containing the list of devices
     """
-    limit = 50
     params = {
         "limit": limit,
-        "offset": 0,
+        "offset": offset,
     }
     if model:
         params["model"] = model + "*"
-    if mac:
-        if re.match(uuid_regex, mac):
-            mac = mac[-12:]
-        mac = mac.replace(":", "").replace("-", "")
+    if device_uuid:
+        params["id"] = device_uuid
     if vendor:
         params['vendor'] = vendor + "*"
     if site_id:
@@ -255,7 +255,7 @@ def get_devices_sync(org_id: str, vendor: str, host: str, model:str, site_id:str
     for dev in details.get("results", []):
         device = {
             "name": dev.get("name", ""),
-            "mac": dev.get("mac", ""),
+            "device_uuid": dev.get("uuid") or dev.get("id") or "",
             "model": dev.get("model", ""),
             "alerts": {"critical": dev.get("alert_counts_critical", 0), "major": dev.get("alert_counts_major", 0), "minor": dev.get("alert_counts_minor", 0)},
             "connected": dev.get("connected", False)
@@ -265,7 +265,7 @@ def get_devices_sync(org_id: str, vendor: str, host: str, model:str, site_id:str
     num_devices = details.get("total", 0)
     if num_devices > limit:
         comment = (f"There are a total of {num_devices} devices available. Displaying the {limit} results. "
-                   f"For more specific results, please search by model name, vendor, site ID, mac, host.")
+                   f"For more specific results, please search by model name, vendor, site ID, device_uuid, host.")
     else:
         comment = f"There are a total of {num_devices} devices available. Displaying all the results."
     res = {
@@ -274,7 +274,7 @@ def get_devices_sync(org_id: str, vendor: str, host: str, model:str, site_id:str
         "comment": comment,
     }
     attach_directives(res, """
-    Do not send only the MAC address in the response.
+    Do not send only the device UUID in the response.
     Include the device’s IP address or hostname as well for proper identification.
     """)
     devices_str = json.dumps(res)
@@ -291,11 +291,8 @@ def get_device_info(org_id: str, device_id: str) -> str:
     :return: JSON string containing the device information
     """
     logger.info("get_device_info")
-    # device_id is either UUID 00000000-0000-0000-1000-2c6bf5975600
-    if len(device_id) == 36:
-        device_id = device_id.split("-")[-1]
     params = {
-        "mac": device_id
+        "id": device_id
     }
 
     try:
@@ -437,14 +434,14 @@ def deploy_config_template_on_device(org_id: str, device_id: str, template_id: s
 
 
 @validate_org_id
-def get_alerts_count(org_id: str, *, router_mac: str="", site_id: str="", alert_type: str="", severity: str="SEVERITY_MINOR",
+def get_alerts_count(org_id: str, *, device_uuid: str="", site_id: str="", alert_type: str="", severity: str="SEVERITY_MINOR",
                      include_acknowledged: bool=False, vpn_uuid: str = "", extra_params: dict = {}, return_data: bool = False) -> str:
     """
     Use this function to get the count of available active alerts for all devices or a specific device of the org. It also provides the count of alerts per severity value.
 
     Args:
         org_id(str): ORG ID of the organization.
-        router_mac(str): MAC address without ":" or "-" of the router
+        device_uuid(str): Device UUID (e.g., "f47ac10b-58cc-4372-a567-0e02b2c3d479"). Use get_devices_sync to retrieve it.
         site_id(str): Filter by site ID (e.g., "f2199f26-60cc-4ebc-a73b-dd93a1920d3c")
         alert_type(str): Filter by alert type (e.g., "routing.isis", "routing", "hardware.fpc.pfe.pfe-bad-route-discard", "hardware", "trust.vulnerability.advisory")
         severity(str): Minimum Alert severity filter. Alerts with the specified severity or higher will be included in the result. .Possible values are: "SEVERITY_CRITICAL","SEVERITY_MAJOR", "SEVERITY_MINOR", "SEVERITY_WARNING", "SEVERITY_INFO".
@@ -472,8 +469,8 @@ def get_alerts_count(org_id: str, *, router_mac: str="", site_id: str="", alert_
         params["type"] = alert_type
     if include_acknowledged:
         params["include_acked"] = "true"
-    if router_mac:
-        params["subject.device_id"] = get_mac_uuid(mac=router_mac)
+    if device_uuid:
+        params["subject.device_id"] = device_uuid
     if vpn_uuid:
         params["subject.service_id"] = vpn_uuid
     # Set extra parameters if any
@@ -504,13 +501,13 @@ def get_alerts_count(org_id: str, *, router_mac: str="", site_id: str="", alert_
 
 
 @validate_org_id
-def get_alerts_for_device(org_id: str, mac: str) -> str:
+def get_alerts_for_device(org_id: str, device_uuid: str) -> str:
     """
     Retrieves the alerts for a device , irrespective of site severity and category.
     Use this function to get the alerts for a device.
     The alerts are grouped by category and severity.
     :param org_id: The organization ID
-    :param device_id: The device ID. This is UUID of the device
+    :param device_uuid: The device UUID (e.g., "f47ac10b-58cc-4372-a567-0e02b2c3d479")
     :return: JSON string containing the alerts grouped by category with severity counts
     """
     if USE_EXTERNAL_API is True:
@@ -519,7 +516,7 @@ def get_alerts_for_device(org_id: str, mac: str) -> str:
     # Call the alert-manager API with device_id as query parameter
     url = f"{ALERTMANAGER_URL}/alert-manager/api/v1/orgs/{org_id}/alerts"
     params = {
-        "subject[device_id]": get_mac_uuid(mac)
+        "subject[device_id]": device_uuid
     }
 
     try:
@@ -563,7 +560,7 @@ def get_alerts_for_device(org_id: str, mac: str) -> str:
 
     # Build the output structure
     output = {
-        "device_id": mac,
+        "device_id": device_uuid,
         "org_id": org_id,
         "alert_category": [
             {
@@ -580,17 +577,17 @@ def get_alerts_for_device(org_id: str, mac: str) -> str:
 
 
 @validate_org_id
-def get_alerts_list(org_id: str, *, router_mac: str="", site_id: str="", vpn_uuid: str="", alert_type: str="", severity: str="SEVERITY_MAJOR", include_acknowledged: bool=False, extra_params: dict = {}) -> str:
+def get_alerts_list(org_id: str, *, device_uuid: str="", site_id: str="", vpn_uuid: str="", alert_type: str="", severity: str="SEVERITY_MAJOR", include_acknowledged: bool=False, extra_params: dict = {}) -> str:
     """
     Use this function if list of available active alerts for the org or a single device is required. Up to 50 alerts will be returned.
     Don't call this function if the count of alerts is required. Use get_alerts_count instead.
     Return the list of alerts do not summarize the alerts unless asked by user.
 
-    IMPORTANT: Always use UUIDs for vpn_uuid parameter, never use names
+    IMPORTANT: Always use UUIDs for vpn_uuid and device_uuid parameters, never use names or MAC addresses.
 
     Args:
         org_id(str): ORG ID of the organization.
-        router_mac(str): MAC address without ":" or "-" of the router
+        device_uuid(str): Device UUID (e.g., "f47ac10b-58cc-4372-a567-0e02b2c3d479"). Use get_devices_sync to retrieve it.
         site_id(str): Filter by site ID, if you have site (e.g., "f2199f26-60cc-4ebc-a73b-dd93a1920d3c")
         vpn_uuid(str): Filter by VPN UUID only. Must be the actual UUID/instance_uuid in format like "f2199f26-60cc-4ebc-a73b-dd93a1920d3c". Do NOT use VPN name - only use the UUID identifier.
         alert_type(str): Filter by alert type (e.g., "routing.isis", "routing", "hardware.fpc.pfe.pfe-bad-route-discard", "hardware", "trust.vulnerability.advisory"). Use this only if you know full alert type or a prefix of alert type. For example, if you want to filter all hardware related alerts, use "hardware" as the alert_type value. If you want to filter only pfe alerts, use "hardware.fpc.pfe" as the alert_type value.
@@ -630,11 +627,8 @@ def get_alerts_list(org_id: str, *, router_mac: str="", site_id: str="", vpn_uui
         params["type"] = alert_type
     if include_acknowledged:
         params["include_acked"] = "true"
-    if router_mac:
-        if re.match(uuid_regex, router_mac):
-            params["subject[device_id]"] = router_mac
-        else:
-            params["subject[device_id]"] = get_mac_uuid(mac=router_mac)
+    if device_uuid:
+        params["subject[device_id]"] = device_uuid
 
     # Set extra parameters if any
     for k,v in extra_params.items():
@@ -714,16 +708,16 @@ def get_site_alert_counts(org_id: str) -> List[dict]:
 
 
 @validate_org_id
-def execute_junos_rpc_sync(org_id: str, router_mac: str, cli_operational_command: str) -> str:
+def execute_junos_rpc_sync(org_id: str, device_uuid: str, cli_operational_command: str) -> str:
     """
     Execute a Junos CLI operational command on a specified router.
 
     Usage Guidance:
     - Use this function only when the user explicitly requests execution of a Junos operational command.
-    - Obtain the `router_mac` (MAC address without ":" or "-") using the `get_device_list` tool if not already known.
+    - Obtain the `device_uuid` using the `get_devices_sync` tool if not already known.
 
     :param org_id (str): ORG ID of the organization.
-    :param router_mac (str): MAC address of the router (no colons or dashes). Unique per device.
+    :param device_uuid (str): UUID of the device (e.g., "f47ac10b-58cc-4372-a567-0e02b2c3d479"). Unique per device.
     :param cli_operational_command (str): The Junos CLI operational command to execute. Please follow these strict rules:
         1. Operational commands needs to be modified and can be executed as is
         2. Do not run commands that impact the device. e.g. reboot, restart, power-off, reset etc.
@@ -736,8 +730,8 @@ def execute_junos_rpc_sync(org_id: str, router_mac: str, cli_operational_command
 
     """
 
-    if not validate_device_mac(org_id=org_id, device_mac=router_mac):
-        return "Invalid device mac, fetch valid device mac using the tool get_device_list"
+    if not validate_device_uuid(org_id=org_id, device_uuid=device_uuid):
+        return "Invalid device UUID, fetch valid device UUID using the tool get_devices_sync"
 
     if _is_xml_command(cli_operational_command):
         return ("Blocked Junos RPC payload detected (%s). "
@@ -749,10 +743,9 @@ def execute_junos_rpc_sync(org_id: str, router_mac: str, cli_operational_command
         return "Disruptive commands %s not allowed" % match
 
     if USE_EXTERNAL_API is False:
-        dash_mac = "-".join(a + b for a, b in zip(router_mac[::2], router_mac[1::2]))
         payload = {
             "device_info": {
-                "UUID": dash_mac,
+                "UUID": device_uuid,
                 "subSystem": "Netconf",
                 "Organization": org_id,
             },
@@ -769,7 +762,7 @@ def execute_junos_rpc_sync(org_id: str, router_mac: str, cli_operational_command
             logger.error(error)
             return error
     else:
-        uuid = get_mac_uuid(mac=router_mac)
+        uuid = device_uuid
         payload = {
             "command": cli_operational_command
         }
@@ -790,7 +783,7 @@ def execute_junos_rpc_sync(org_id: str, router_mac: str, cli_operational_command
 
 
 @validate_org_id
-def execute_junos_command(org_id: str, router_mac: str, cli_operational_command: str) -> str:
+def execute_junos_command(org_id: str, device_uuid: str, cli_operational_command: str) -> str:
     """
     Execute a Junos operational (show) CLI command on a router.
 
@@ -802,7 +795,7 @@ def execute_junos_command(org_id: str, router_mac: str, cli_operational_command:
 
     Args:
         org_id (str): ORG ID of the organization. Mandatory parameter.
-        router_mac (str): MAC address of the router (no colons or dashes). Unique per device.
+        device_uuid (str): UUID of the device (e.g., "f47ac10b-58cc-4372-a567-0e02b2c3d479"). Use get_devices_sync to retrieve it.
         cli_operational_command (str): The Junos CLI operational command to execute. Please follow these strict rules:
             1. Do not run commands that impact the device. e.g. reboot, restart, power-off, reset etc.
             2. To view configuration use "show configuration ... | display inheritance".
@@ -813,8 +806,8 @@ def execute_junos_command(org_id: str, router_mac: str, cli_operational_command:
     Returns:
         str: Output of the executed command from the router, in JSON format.
     """
-    if not validate_device_mac(org_id=org_id, device_mac=router_mac):
-        return "Invalid device mac, fetch valid device mac using the tool get_device_list"
+    if not validate_device_uuid(org_id=org_id, device_uuid=device_uuid):
+        return "Invalid device UUID, fetch valid device UUID using the tool get_devices_sync"
 
     if _is_xml_command(cli_operational_command):
         return ("Blocked Junos RPC payload detected (%s). "
@@ -829,10 +822,9 @@ def execute_junos_command(org_id: str, router_mac: str, cli_operational_command:
     cli_operational_command = _quote_junos_pipe_patterns(cli_operational_command)
 
     if USE_EXTERNAL_API is False:
-        dash_mac = "-".join(a + b for a, b in zip(router_mac[::2], router_mac[1::2]))
         payload = {
             "device_info": {
-                "UUID": dash_mac,
+                "UUID": device_uuid,
                 "subSystem": "Netconf",
                 "Organization": org_id,
             },
@@ -849,12 +841,11 @@ def execute_junos_command(org_id: str, router_mac: str, cli_operational_command:
             logger.error(error)
             return error
     else:
-        uuid = get_mac_uuid(mac=router_mac)
         payload = {
             "command": cli_operational_command
         }
         try:
-            res = con.request(url=f"/api/v1/orgs/{org_id}/devices/{uuid}/execute_command_on_device", method="POST", json=payload)
+            res = con.request(url=f"/api/v1/orgs/{org_id}/devices/{device_uuid}/execute_command_on_device", method="POST", json=payload)
         except requests.exceptions.RequestException as exp:
             error = f"RequestException failure. Failed to get device details {exp}: {sys.stderr}"
             logger.error(error)
@@ -870,7 +861,7 @@ def execute_junos_command(org_id: str, router_mac: str, cli_operational_command:
 
 
 @validate_org_id
-def junos_config_diff(org_id: str, router_mac: str, version: int = 1) -> str:
+def junos_config_diff(org_id: str, device_uuid: str, version: int = 1) -> str:
     """
     Get the configuration diff/delta/patch/changes between the current configuration and a rollback version on a Junos router.
 
@@ -891,12 +882,11 @@ def junos_config_diff(org_id: str, router_mac: str, version: int = 1) -> str:
     Usage Guidance:
     - Use this function when the user wants to see configuration changes, differences, or what was modified.
     - Useful for auditing configuration changes, troubleshooting, or reviewing recent modifications.
-    - Obtain the `router_mac` (MAC address without ":" or "-") using the `get_device_list` tool if not already known.
+    - Obtain the `device_uuid` using the `get_devices_sync` tool if not already known.
 
     Args:
         org_id (str): ORG ID of the organization. This is a mandatory parameter.
-        router_mac (str): MAC address of the router without colons or dashes (e.g., "2c6bf5660700").
-                          Unique identifier per device. Use `get_device_list` to obtain this if unknown.
+        device_uuid (str): UUID of the device (e.g., "f47ac10b-58cc-4372-a567-0e02b2c3d479"). Use get_devices_sync to retrieve it.
         version (int): The rollback version number to compare against (0-49). Default is 1.
                        - Version 0: Active configuration (shows uncommitted/pending changes)
                        - Version 1: Most recent saved configuration (last commit)
@@ -912,30 +902,29 @@ def junos_config_diff(org_id: str, router_mac: str, version: int = 1) -> str:
 
     Raises:
         Returns error message if:
-        - Invalid device MAC address is provided
+        - Invalid device UUID is provided
         - Rollback version is out of valid range (0-49)
         - Device communication fails
 
     Examples:
-        - Check uncommitted changes: junos_config_diff(org_id, router_mac, 0)
-        - Compare current config with last committed config: junos_config_diff(org_id, router_mac, 1)
-        - Compare current config with config from 2 commits ago: junos_config_diff(org_id, router_mac, 2)
+        - Check uncommitted changes: junos_config_diff(org_id, device_uuid, 0)
+        - Compare current config with last committed config: junos_config_diff(org_id, device_uuid, 1)
+        - Compare current config with config from 2 commits ago: junos_config_diff(org_id, device_uuid, 2)
     """
     # Validate rollback version is within valid range
     if not isinstance(version, int) or version < 0 or version > 49:
         return "Invalid rollback version. Please provide a version number between 0 and 49."
 
-    if not validate_device_mac(org_id=org_id, device_mac=router_mac):
-        return "Invalid device mac, fetch valid device mac using the tool get_device_list"
+    if not validate_device_uuid(org_id=org_id, device_uuid=device_uuid):
+        return "Invalid device UUID, fetch valid device UUID using the tool get_devices_sync"
 
     # Construct the Junos CLI command for configuration diff
     cli_operational_command = f"show configuration | compare rollback {version}"
 
     if USE_EXTERNAL_API is False:
-        dash_mac = "-".join(a + b for a, b in zip(router_mac[::2], router_mac[1::2]))
         payload = {
             "device_info": {
-                "UUID": dash_mac,
+                "UUID": device_uuid,
                 "subSystem": "Netconf",
                 "Organization": org_id,
             },
@@ -952,12 +941,11 @@ def junos_config_diff(org_id: str, router_mac: str, version: int = 1) -> str:
             logger.error(error)
             return error
     else:
-        uuid = get_mac_uuid(mac=router_mac)
         payload = {
             "command": cli_operational_command
         }
         try:
-            res = con.request(url=f"/api/v1/orgs/{org_id}/devices/{uuid}/execute_command_on_device", method="POST", json=payload)
+            res = con.request(url=f"/api/v1/orgs/{org_id}/devices/{device_uuid}/execute_command_on_device", method="POST", json=payload)
         except requests.exceptions.RequestException as exp:
             error = f"RequestException failure. Failed to get configuration diff: {exp}"
             logger.error(error)
@@ -973,7 +961,7 @@ def junos_config_diff(org_id: str, router_mac: str, version: int = 1) -> str:
 
 
 @validate_org_id
-def junos_config_set(org_id: str, router_mac: str, set_commands: str) -> str:
+def junos_config_set(org_id: str, device_uuid: str, set_commands: str) -> str:
     """
     Apply Junos configuration commands on a router. This stages the configuration in the candidate config
     but does NOT commit it. You MUST call `junos_config_commit` separately to activate the changes.
@@ -990,7 +978,7 @@ def junos_config_set(org_id: str, router_mac: str, set_commands: str) -> str:
 
     Args:
         org_id (str): ORG ID of the organization. Mandatory parameter.
-        router_mac (str): MAC address of the router without colons or dashes (e.g., "2c6bf5660700").
+        device_uuid (str): UUID of the device (e.g., "f47ac10b-58cc-4372-a567-0e02b2c3d479"). Use get_devices_sync to retrieve it.
                           Unique identifier per device. Use `get_device_list` to obtain this if unknown.
         set_commands (str): One or more Junos configuration commands to apply. Multiple commands must be separated by "\\n".
             Supported command prefixes:
@@ -1021,8 +1009,8 @@ def junos_config_set(org_id: str, router_mac: str, set_commands: str) -> str:
         - Changes are NOT active until `junos_config_commit` is called
         - The pending config diff is automatically included in the response — do NOT call junos_config_diff separately
     """
-    if not validate_device_mac(org_id=org_id, device_mac=router_mac):
-        return "Invalid device mac, fetch valid device mac using the tool get_device_list"
+    if not validate_device_uuid(org_id=org_id, device_uuid=device_uuid):
+        return "Invalid device UUID, fetch valid device UUID using the tool get_devices_sync"
 
     # Validate that all commands are set or delete commands
     commands = [cmd.strip() for cmd in set_commands.strip().split("\n") if cmd.strip()]
@@ -1043,12 +1031,11 @@ def junos_config_set(org_id: str, router_mac: str, set_commands: str) -> str:
 
 
     if USE_EXTERNAL_API is False:
-        dash_mac = "-".join(a + b for a, b in zip(router_mac[::2], router_mac[1::2]))
         # For internal API, send each set command wrapped in XML
         command_list = [f"<command>{cmd}</command>" for cmd in commands]
         payload = {
             "device_info": {
-                "UUID": dash_mac,
+                "UUID": device_uuid,
                 "subSystem": "Netconf",
                 "Organization": org_id,
             },
@@ -1066,14 +1053,13 @@ def junos_config_set(org_id: str, router_mac: str, set_commands: str) -> str:
             logger.error(error)
             return error
     else:
-        uuid = get_mac_uuid(mac=router_mac)
         # Send commands directly — the API handles configure mode internally
         config_command = "\n".join(commands)
         payload = {
             "command": config_command
         }
         try:
-            res = con.request(url=f"/api/v1/orgs/{org_id}/devices/{uuid}/execute_command_on_device", method="POST", json=payload)
+            res = con.request(url=f"/api/v1/orgs/{org_id}/devices/{device_uuid}/execute_command_on_device", method="POST", json=payload)
         except requests.exceptions.RequestException as exp:
             error = f"RequestException failure. Failed to apply configuration: {exp}"
             logger.error(error)
@@ -1089,7 +1075,7 @@ def junos_config_set(org_id: str, router_mac: str, set_commands: str) -> str:
     # Automatically fetch the config diff to avoid a separate API call
     config_diff = None
     try:
-        diff_result = junos_config_diff(org_id=org_id, router_mac=router_mac, version=0)
+        diff_result = junos_config_diff(org_id=org_id, device_uuid=device_uuid, version=0)
         config_diff = json.loads(diff_result) if isinstance(diff_result, str) else diff_result
     except Exception as exp:
         logger.warning(f"Failed to auto-fetch config diff: {exp}")
@@ -1105,7 +1091,7 @@ def junos_config_set(org_id: str, router_mac: str, set_commands: str) -> str:
 
 
 @validate_org_id
-def junos_config_commit(org_id: str, router_mac: str, confirm_minutes: int = 0) -> str:
+def junos_config_commit(org_id: str, device_uuid: str, confirm_minutes: int = 0) -> str:
     """
     Commit the staged/candidate configuration on a Junos router to make it active.
 
@@ -1122,8 +1108,7 @@ def junos_config_commit(org_id: str, router_mac: str, confirm_minutes: int = 0) 
 
     Args:
         org_id (str): ORG ID of the organization. Mandatory parameter.
-        router_mac (str): MAC address of the router without colons or dashes (e.g., "2c6bf5660700").
-                          Unique identifier per device. Use `get_device_list` to obtain this if unknown.
+        device_uuid (str): UUID of the device (e.g., "f47ac10b-58cc-4372-a567-0e02b2c3d479"). Use get_devices_sync to retrieve it.
         confirm_minutes (int): Optional. If set to a value > 0, performs a "commit confirmed <minutes>".
                                The configuration will auto-rollback after the specified minutes unless
                                a follow-up `commit` is issued to confirm.
@@ -1138,11 +1123,11 @@ def junos_config_commit(org_id: str, router_mac: str, confirm_minutes: int = 0) 
              On failure, returns an error message describing what went wrong.
 
     Examples:
-        - Standard commit: junos_config_commit(org_id, router_mac)
-        - Commit confirmed (10 min auto-rollback): junos_config_commit(org_id, router_mac, confirm_minutes=10)
+        - Standard commit: junos_config_commit(org_id, device_uuid)
+        - Commit confirmed (10 min auto-rollback): junos_config_commit(org_id, device_uuid, confirm_minutes=10)
     """
-    if not validate_device_mac(org_id=org_id, device_mac=router_mac):
-        return "Invalid device mac, fetch valid device mac using the tool get_device_list"
+    if not validate_device_uuid(org_id=org_id, device_uuid=device_uuid):
+        return "Invalid device UUID, fetch valid device UUID using the tool get_devices_sync"
 
     # Validate confirm_minutes
     if not isinstance(confirm_minutes, int) or confirm_minutes < 0 or confirm_minutes > 60:
@@ -1155,10 +1140,9 @@ def junos_config_commit(org_id: str, router_mac: str, confirm_minutes: int = 0) 
         commit_command = "commit"
 
     if USE_EXTERNAL_API is False:
-        dash_mac = "-".join(a + b for a, b in zip(router_mac[::2], router_mac[1::2]))
         payload = {
             "device_info": {
-                "UUID": dash_mac,
+                "UUID": device_uuid,
                 "subSystem": "Netconf",
                 "Organization": org_id,
             },
@@ -1176,12 +1160,11 @@ def junos_config_commit(org_id: str, router_mac: str, confirm_minutes: int = 0) 
             logger.error(error)
             return error
     else:
-        uuid = get_mac_uuid(mac=router_mac)
         payload = {
             "command": commit_command
         }
         try:
-            res = con.request(url=f"/api/v1/orgs/{org_id}/devices/{uuid}/execute_command_on_device", method="POST", json=payload)
+            res = con.request(url=f"/api/v1/orgs/{org_id}/devices/{device_uuid}/execute_command_on_device", method="POST", json=payload)
         except requests.exceptions.RequestException as exp:
             error = f"RequestException failure. Failed to commit configuration: {exp}"
             logger.error(error)
@@ -1204,4 +1187,39 @@ def junos_config_commit(org_id: str, router_mac: str, confirm_minutes: int = 0) 
             f"unless a follow-up commit is issued to confirm the changes."
         )
     return json.dumps(result)
+
+
+@validate_org_id
+def get_device_latest_config(org_id: str, device_id: str) -> str:
+    """
+    Retrieves the latest committed device configuration from Routing Director.
+    Routing Director caches the most recent committed configuration per managed
+    device, so this avoids running a CLI command on the device itself.
+
+    :param org_id: The organization ID
+    :param device_id: The device UUID (e.g. f47ac10b-58cc-4372-a567-0e02b2c3d479)
+    :return: JSON string. On success: {"device_id":..., "config":<dict-or-str>}.
+             On failure: {"error":..., "details":...}
+    """
+    logger.info("get_device_latest_config")
+    uuid = device_id if device_id else ""
+    if not uuid:
+        return json.dumps({"error": "device_id is required"})
+    try:
+        if USE_EXTERNAL_API is False:
+            resp = con.request(method="GET",
+                               url=f"{PAPI_URL}internal/orgs/{org_id}/devices/{uuid}/latest_config",
+                               headers={"X-FROM": X_FROM})
+        else:
+            resp = con.request(method="GET",
+                               url=f"/api/v1/orgs/{org_id}/devices/{uuid}/latest_config")
+    except requests.exceptions.RequestException as exp:
+        return json.dumps({"error": "Failed to fetch latest_config", "details": str(exp)})
+    if resp.status_code != 200:
+        return json.dumps({"error": f"HTTP {resp.status_code}", "details": resp.text[:500]})
+    try:
+        body = resp.json()
+    except Exception:
+        body = resp.text
+    return json.dumps({"device_id": uuid, "config": body}, default=str)
 

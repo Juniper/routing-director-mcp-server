@@ -1,7 +1,7 @@
 [project]
 name = "routing-director-mcp-server"
-version = "2.9.0"
+version = "2.10.0"
 description = "MCP server integrating with Juniper Routing Director"
 readme = "README.md"
 license = {text = "Apache-2.0"}
-requires-python = ">=3.10,<3.12"
+requires-python = ">=3.10,<=3.14"
