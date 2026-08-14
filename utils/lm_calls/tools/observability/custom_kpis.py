@@ -1,4 +1,3 @@
-import os
 import json
 import logging
 # Use timezone.utc (available since Python 3.2) rather than datetime.UTC,
@@ -28,22 +27,21 @@ def get_custom_kpi_instantiations(org_id: str, pageNumber: int =1, limit: int =5
     if USE_EXTERNAL_API is False:
         return "Not Implemented"
     resp = con.request(method="GET", url=f"/insights/api/v1/orgs/{org_id}/instances/summary", params=params)
-    return json.dumps(resp.json(), indent=2) + ". Resolve the device mac addresses to name"
+    return json.dumps(resp.json(), indent=2) + ". Resolve the device UUIDs to device names"
 
 
 @validate_org_id
-def get_observability_kpis(org_id: str, mac: str) -> str:
+def get_observability_kpis(org_id: str, device_uuid: str) -> str:
     """
     Retrieves the list of KPIs from the Routing Director.
     :param org_id: The organization ID
-    :param mac: MAC address of device without ":" or "-" (e.g., "2c6bf5660700")
+    :param device_uuid: Device UUID (e.g., "f47ac10b-58cc-4372-a567-0e02b2c3d479"). Use get_devices_sync to retrieve it.
     :return: JSON string containing the list of KPIs
     """
     logger.info("get_observability_kpis")
     url = f"/insights/api/v1/orgs/{org_id}/tsdb/series"
-    if not mac:
+    if not device_uuid:
         return "Please specifiy the device for which you want to retrieve the KPIs"
-    mac = mac.replace(":", "").replace("-", "")
     if not org_id:
         return "Please specifiy the organization for which you want to retrieve the KPIs"
     present_time = datetime.now(timezone.utc)
@@ -51,7 +49,7 @@ def get_observability_kpis(org_id: str, mac: str) -> str:
     start_time = (present_time - timedelta(minutes=30)).strftime("%Y-%m-%dT%H:%M:%SZ")
     body = [
         {
-            "device": mac,
+            "device": device_uuid,
             "topic":"[a-z].*",
             "rule":"[a-z].*",
             "field":".*",
@@ -98,22 +96,21 @@ def get_observability_kpis(org_id: str, mac: str) -> str:
 
 
 @validate_org_id
-def get_observability_kpi_data(org_id: str, mac: str, topic: str, rule: str, field: str, label_filters: List[str]) -> str:
+def get_observability_kpi_data(org_id: str, device_uuid: str, topic: str, rule: str, field: str, label_filters: List[str]) -> str:
     """
     Retrieves the KPI data from the Routing Director.
     :param org_id: The organization ID
-    :param mac: MAC address of device without ":" or "-" (e.g., "2c6bf5660700")
+    :param device_uuid: Device UUID (e.g., "f47ac10b-58cc-4372-a567-0e02b2c3d479"). Use get_devices_sync to retrieve it.
     :param topic: The topic of the KPI
     :param rule: The rule of the KPI
     :param field: The field of the KPI
-    :param label_filters: Filter to be applied on the data. Each element of filter is a string of format "label=value". Eg: ["label1=value1", "label2=value2"]. Ignore org_id and device_mac in filters
+    :param label_filters: Filter to be applied on the data. Each element of filter is a string of format "label=value". Eg: ["label1=value1", "label2=value2"]. Ignore org_id and device_uuid in filters
     :return: JSON string containing the KPI data
     """
     logger.info("get_observability_kpi_data")
     url = f"/insights/api/v1/orgs/{org_id}/tsdb/query"
-    if not mac:
+    if not device_uuid:
         return "Please specifiy the device for which you want to retrieve the KPIs"
-    mac = mac.replace(":", "").replace("-", "")
     if not org_id:
         return "Please specifiy the organization for which you want to retrieve the KPIs"
     present_time = datetime.now(timezone.utc)
@@ -128,7 +125,7 @@ def get_observability_kpi_data(org_id: str, mac: str, topic: str, rule: str, fie
 
     body = [
         {
-            "device": mac,
+            "device": device_uuid,
             "topic": topic,
             "rule": rule,
             "fields": [f"{field}"],

@@ -38,13 +38,15 @@ def clean_mac(mac: str) -> str:
 
 
 def get_mac_uuid(mac: str) -> str:
-    """Convert MAC address to UUID format.
+    """Convert MAC address to legacy UUID format (pre-2.10.0 deployments only).
 
     Args:
         mac: MAC address in format XXXXXXXXXXXX (12 chars) or XX:XX:XX:XX:XX:XX (17 chars)
 
     Returns:
-        UUID string in format 00000000-0000-0000-1000-XXXXXXXXXXXX
+        UUID string in legacy format 00000000-0000-0000-1000-XXXXXXXXXXXX.
+        NOTE: In 2.10.0+ deployments, device UUIDs are fully random and cannot be
+        constructed from MAC addresses. Use the UUID returned directly by the API.
     """
     # received UUID format, return as-is
     if len(mac) == 36:
@@ -57,6 +59,27 @@ def get_mac_uuid(mac: str) -> str:
     if len(normalized_mac) == 12:
         return f"00000000-0000-0000-1000-{normalized_mac}"
     return mac
+
+
+_LEGACY_UUID_PREFIX = "00000000-0000-0000-1000-"
+
+
+def get_mac_from_legacy_uuid(device_uuid: str) -> str:
+    """Extract MAC hex from a legacy pre-2.10.0 UUID for backward compatibility.
+
+    Legacy UUIDs have a known deterministic format: 00000000-0000-0000-1000-<12-char-mac-hex>.
+    This function returns the MAC hex only when the UUID matches that exact format.
+    For 2.10.0+ random UUIDs it returns an empty string — never use split() on those.
+
+    Args:
+        device_uuid: Device UUID string
+
+    Returns:
+        12-char MAC hex string for legacy UUIDs, or "" for 2.10.0+ random UUIDs.
+    """
+    if len(device_uuid) == 36 and device_uuid.startswith(_LEGACY_UUID_PREFIX):
+        return device_uuid[len(_LEGACY_UUID_PREFIX):]
+    return ""
 
 
 def validate_device_mac(org_id: str, device_mac: str):
@@ -79,6 +102,28 @@ def validate_device_mac(org_id: str, device_mac: str):
     device_exists = details.get("total") == 1
     if not device_exists:
         logger.error(f"Device with mac {device_mac} does not exist")
+    return device_exists
+
+
+def validate_device_uuid(org_id: str, device_uuid: str):
+    logger.info("Validating the device uuid {}".format(device_uuid))
+    params = {
+        "id": device_uuid,
+    }
+
+    try:
+        if USE_EXTERNAL_API is False:
+            res = con.request(url=f"{PAPI_URL}internal/orgs/{org_id}/device/profiles/search", params=params, method="GET")
+        else:
+            res = con.request(url=f"/api/v1/orgs/{org_id}/device/profiles/search", params=params, method="GET")
+    except requests.exceptions.RequestException as exp:
+        print(f"Failed to get device details {exp}", file=sys.stderr)
+        return False
+    else:
+        details = res.json()
+    device_exists = details.get("total") == 1
+    if not device_exists:
+        logger.error(f"Device with uuid {device_uuid} does not exist")
     return device_exists
 
 

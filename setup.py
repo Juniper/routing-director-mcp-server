@@ -12,12 +12,13 @@ files_copy = {
     "RoutingDirectorMCP.py": "RoutingDirectorMCP.py",
     "utils/lm_calls/paragon/constants.py": "utils/lm_calls/paragon/constants.py",
     "utils/lm_calls/agent_directives.py": "utils/lm_calls/agent_directives.py",
+    "utils/lm_calls/tools/HPE_Graphik_A4.dotx": "utils/lm_calls/tools/HPE_Graphik_A4.dotx",
     "requirements.txt": "requirements.txt",
     "setup.py": "setup.py",
     "README.md": "README.md",
 }
 
-version = "v2.9.0"
+version = "v2.10.0"
 
 class CustomBuildCommand(sdist):
     def run(self):

@@ -18,7 +18,7 @@ An MCP (Model Context Protocol) server that integrates with Juniper's Routing Di
 
 ## Prerequisites
 
-- Python 3.10 or 3.11
+- Python >= 3.10, <= 3.14
 - Juniper Routing Director instance
 - Network connectivity to Routing Director API
 - Valid Routing Director credentials (username/password or API token)
@@ -267,27 +267,20 @@ Claude: https://code.claude.com/docs/en/mcp
 ---
 
 
-### Release 2.9.0
+### Release 2.10.0
 
-Current version: **v2.9.0**
+Current version: **v2.10.0**
 
-Juniper's Routing Director 2.9.0 User Guide: https://www.juniper.net/documentation/us/en/software/juniper-routing-director2.9.0/user-guide/index.html 
+Juniper's Routing Director 2.10.0 User Guide: https://www.juniper.net/documentation/us/en/software/juniper-routing-director2.10.0/user-guide/index.html 
 
 #### Whats new?
-* Support for running junos operational and configurational commands on the MCP server using the  `execute_junos_command`(for operational commands) and `junos_config_set`, `junos_config_diff` and `junos_config_commit` (for configuration commands) tools. This allows users to push configuration changes to Junos devices directly from the MCP server. For more details please refer the documentation: https://www.juniper.net/documentation/us/en/software/juniper-routing-director2.9.0/user-guide/topics/topic-map/mcp-server-use.html 
-
+* Support for python 3.14
 * Bug fixes
 
 
 #### Known Issues:
 1. The MCP server's command blacklist only covers operational mode commands. Destructive configuration commands — such as delete, rollback factory, load factory-default, and their NETCONF equivalents — are not blocked and can be executed if triggered by a user prompt or LLM-generated action, potentially causing loss of critical device configuration.
 Workaround: We recommend that you avoid prompts that may trigger destructive configuration changes. Additionally, enable the MCP approval workflow to require manual confirmation before any configuration-changing commands are executed on devices.
-
-2. When the http_url in the MCP configuration file (config.json) ends with a trailing slash (/) and when the Routing Director's MCP server functionality (junos_config_commit tool call) for pushing commits onto the Junos device is called, the MCP server incorrectly constructs the API URL with a double slash (//). This results in a 400 Bad Request error and fails to execute the tool call.
-Workaround: Ensure the http_url in the MCP server’s config.json does not include a trailing slash. Use http_url": "https://<ip-address>" instead of http_url": "https://<ip-address>/".
-
-3. In Routing Director's Model Context Protocol (MCP) integration, inconsistent argument naming for MAC address parameters across multiple tools (For example, mac, router_mac, device_mac) causes the AI model to hallucinate incorrect argument names.
-Workaround: If you are encountering this issue, you can retry the query or explicitly specify the correct argument name in the prompt to guide the MCP co-pilot toward the right parameter. You can refer to the MCP tool documentation for the exact expected parameter name, which can help avoid hallucination errors.
 
 
 ---
